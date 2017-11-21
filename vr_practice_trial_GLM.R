@@ -28,11 +28,11 @@ practice.sub <- subset(data, Scenario == "practice")
 practice.glm <- glm(Hit_Large ~ Perspective * AV.Car,
                     data=practice.sub, family="binomial")
 
+practice.plot <- ggplot(practice.sub,aes(x = AV.Car,fill = Hit_Large)) +
+    geom_bar(position = "fill") +
+    facet_grid (.~Perspective) +
+    xlab("Driver, Perspective") + ylab("Proportion of responses")
 
-practice.plot <- ggplot(practice.glm, aes(as.numeric(Perspective), as.numeric(Hit_Large), color=AV.Car)) +
-    stat_smooth(method="glm", method.args=list(family ="binomial")) +
-    geom_point(position=position_jitter(height=0.03, width=0)) +
-    xlab("Perspective") + ylab("acceptability of hitting larger group")
 
 summary(practice.glm)
 practice.plot
