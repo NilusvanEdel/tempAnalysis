@@ -24,15 +24,18 @@ data$Hit_Large <- (data$Selected.Option == "Rechts" & data$
 
 practice.sub <- subset(data, Scenario == "practice")
 
-
-practice.glm <- glm(Hit_Large ~ Perspective * AV.Car,
+practice_accept.glm <- glm(Hit_Large ~ Perspective * AV.Car + Gender,
                     data=practice.sub, family="binomial")
 
-practice.plot <- ggplot(practice.sub,aes(x = AV.Car,fill = Hit_Large)) +
+practice_conf.lm <- glm(Hit_Large ~ Perspective * AV.Car + Gender,
+                    data=practice.sub)
+
+practice_accept.plot <- ggplot(practice.sub,aes(x = AV.Car,fill = Hit_Large)) +
     geom_bar(position = "fill") +
     facet_grid (.~Perspective) +
     xlab("Driver, Perspective") + ylab("Proportion of responses")
 
 
-summary(practice.glm)
-practice.plot
+summary(practice_accept.glm)
+summary(practice_conf.lm)
+practice_accept.plot
