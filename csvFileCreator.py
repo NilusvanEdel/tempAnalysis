@@ -73,8 +73,8 @@ with open(folder +'/'+ 'combinedCSV.csv') as csvfile:
             newLine.append('smallGroups')
         else:
             newLine.append('largeGroups')
-        if (dataSplit[8] == 'TRUE' and dataSplit[9] == 'Ersteres') or \
-                (dataSplit[8 == 'FALSE' and dataSplit[9] == 'Zweiteres']):
+        if (dataSplit[8] == 'True' and dataSplit[9] == 'Ersteres') or \
+                (dataSplit[8] == 'False' and dataSplit[9] == 'Zweiteres'):
             newLine.append('hitChildren')
         else:
             newLine.append('hitAdults')
