@@ -6,6 +6,9 @@ import os
 path = '/home/nilus/PycharmProjects/tempAnalysis/Data'
 ### where the created Files will be stored
 folder = '/home/nilus/PycharmProjects/tempAnalysis/'
+### function to find the index in PostQuestionnaire
+def findItem(theList, item):
+   return [ind for ind in range(len(theList)) if item in theList[ind]][0]
 
 os.chdir(path)
 fileList = []
@@ -13,16 +16,20 @@ combinedCSV = []
 counter = 0
 ### get each file in path with ending csv
 for file in glob.glob("*.csv"):
+    if file == 'Post Questionnaire.csv':
+        continue
     with open(path +'/'+ file) as csvfile:
         reader = csv.reader(csvfile, delimiter = ',')
         for row in reader:
             if counter == 0:
                 counter += 1
-                firstRow = row
+                firstRow = row[0].split()
                 combinedCSV.append(firstRow)
                 continue
-            if row[0] == firstRow[0]:
+            row = row[0].split()
+            if row == firstRow:
                 continue
+            row[0] = file.split(".")[0]
             combinedCSV.append(row)
 
 ### writeCombined CSV file
@@ -31,22 +38,28 @@ with open(folder+'combinedCSV.csv', 'w+') as myfile:
     for i in range(len(combinedCSV)):
         wr.writerow(combinedCSV[i])
 
+### read PostQues
+postQues = []
+with open(path + '/' + 'Post Questionnaire.csv') as csvfile:
+    reader = csv.reader(csvfile, delimiter=',')
+    for row in reader:
+        postQues.append(row)
+
 ### write first line
 childCSV, sidewalkCSV, selfSacCSV = [], [], []
-firstLine = ['participant-ID', 'male','av/Car', 'perspective', 'passedSanCheck', 'Trial', 'Decision']
+firstLine = ['participant-ID', 'male','av/Car', 'perspective', 'passedSanCheck', 'perceivedCar', 'perceivedIden', 'Trial', 'Decision']
 childCSV.append(firstLine)
 sidewalkCSV.append(firstLine)
 selfSacCSV.append(firstLine)
 
 counter = 0
 with open(folder +'/'+ 'combinedCSV.csv') as csvfile:
-    reader = csv.reader(csvfile, delimiter=' ')
+    reader = csv.reader(csvfile, delimiter=',')
     oldID = 0
-    for row in reader:
+    for dataSplit in reader:
         if counter == 0:
             counter += 1
             continue
-        dataSplit = row[0].split()
         newLine = dataSplit[0:3]
         if oldID != dataSplit[0]:
             oldID = dataSplit[0]
@@ -69,6 +82,12 @@ with open(folder +'/'+ 'combinedCSV.csv') as csvfile:
         else:
             newLine.append('PedLarge')
         newLine.append(sanityCheckPassed)
+        try:
+            ind = postQues[findItem(postQues, oldID)]
+            newLine.append(ind[11])
+            newLine.append(ind[12])
+        except IndexError:
+            for i in range(2): newLine.append("NoSimilarID")
         newLineChild = newLine
         newLineSidewalk = newLine
         newLineSelfSac = newLine
