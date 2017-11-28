@@ -47,7 +47,7 @@ with open(path + '/' + 'Post Questionnaire.csv') as csvfile:
 
 ### write first line
 childCSV, sidewalkCSV, selfSacCSV = [], [], []
-firstLine = ['participant-ID', 'male','av/Car', 'perspective', 'passedSanCheck', 'perceivedCar', 'perceivedIden', 'Trial', 'Decision']
+firstLine = ['participant-ID', 'male','av/Car', 'perspective', 'passedSanCheck', 'perceivedCar', 'perceivedIden', 'confidence', 'trial', 'decision']
 childCSV.append(firstLine)
 sidewalkCSV.append(firstLine)
 selfSacCSV.append(firstLine)
@@ -88,6 +88,8 @@ with open(folder +'/'+ 'combinedCSV.csv') as csvfile:
             newLine.append(ind[12])
         except IndexError:
             for i in range(2): newLine.append("NoSimilarID")
+        ### difficultyOfDecision
+        newLine.append(dataSplit[10])
         newLineChild = newLine
         newLineSidewalk = newLine
         newLineSelfSac = newLine
