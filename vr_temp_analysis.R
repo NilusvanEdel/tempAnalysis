@@ -43,14 +43,14 @@ sidewalk.data <- subset(sidewalk.data, passedSanCheck == "True")
 
 
 # run the GLMMs
-child.glmm <- glmer(Decision == "hitChildren" ~ perspective * av.Car +
-                        (1|participant.ID) + male, family = "binomial", data=child.data)
+child.glmm <- glmer(decision == "hitChildren" ~ perspective * driver +
+                        (1|participant.ID) + gender, family = "binomial", data=child.data)
 
-carsac.glmm <- glmer(Decision == "selfSacrifice" ~ perspective *
-                         driver + (1|participant.ID) + male, family = "binomial", data=carsac.data)
+carsac.glmm <- glmer(decision == "selfSacrifice" ~ perspective *
+                         driver + (1|participant.ID) + gender, family = "binomial", data=carsac.data)
 
-sidewalk.glmm <- glmer(Decision == "hitSidewalk" ~ perspective * driver +
-                           (1|participant.ID) + male, family = "binomial",
+sidewalk.glmm <- glmer(decision == "hitSidewalk" ~ perspective * driver +
+                           (1|participant.ID) + gender, family = "binomial",
                        data=sidewalk.data)
 
 # plot the proportions
