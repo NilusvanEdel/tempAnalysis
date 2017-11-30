@@ -54,15 +54,15 @@ sidewalk.glmm <- glmer(decision == "hitSidewalk" ~ perspective * driver +
                        data=sidewalk.data)
 
 # plot the proportions
-child.plot <- ggplot(child.data,aes(x = driver,fill = Decision)) +
+child.plot <- ggplot(child.data,aes(x = driver,fill = decision)) +
     geom_bar(position = "fill") + facet_grid (.~perspective) +
     xlab("Driver, Perspective") + ylab("Proportion of responses")
 
-carsac.plot <- ggplot(carsac.data,aes(x = driver,fill = Decision)) +
+carsac.plot <- ggplot(carsac.data,aes(x = driver,fill = decision)) +
     geom_bar(position = "fill") + facet_grid (.~perspective) +
     xlab("Driver, Perspective") + ylab("Proportion of responses")
 
 sidewalk.plot <-
-    ggplot(sidewalk.data,aes(x = driver,fill = Decision)) +
+    ggplot(sidewalk.data,aes(x = driver,fill = decision)) +
     geom_bar(position = "fill") + facet_grid (.~perspective) +
     xlab("Driver, Perspective") + ylab("Proportion of responses")
