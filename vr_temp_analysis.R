@@ -1,11 +1,11 @@
 library(lme4)
 library(ggplot2)
 # read the dataframes
-child.data <- read.csv("data/childrenCSV.csv")
+child.data <- read.csv("childrenCSV.csv")
 
-carsac.data <- read.csv("data/selfSacCSV.csv")
+carsac.data <- read.csv("selfSacCSV.csv")
 
-sidewalk.data <- read.csv("data/sidewalkCSV.csv")
+sidewalk.data <- read.csv("sidewalkCSV.csv")
 
 # clean the factor labels
 
