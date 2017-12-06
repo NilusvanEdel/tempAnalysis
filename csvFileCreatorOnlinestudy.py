@@ -74,29 +74,19 @@ oldID = -1
 failedSanCheck = []
 counter = 0
 for row in fullCSV:
-  if row[0] != oldID:
-      sanCheckHappened = False
-      passedSanCheck = False
-      oldID = row[0]
-      ind = fullCSV.index(row)
-      # remove the first two rows (disclaimer and instructions)
-      for i in range(2): fullCSV.pop(ind)
-      row = fullCSV[ind]
-      if passedSanCheck: continue
-      else:
-          if not sanCheckHappened:
-              if row[6] == ('swerve' or 'NaN'):
-                  sanCheckHappened = True
-                  passedSanCheck = True
-                  fullCSV.remove(row)
-              else:
-                  failedSanCheck.append(oldID)
-                  sanCheckHappened = True
-                  fullCSV.remove(row)
-                  #print("failedSanCheck")
-          # if participant failed the sanChecked
-          else:
-              fullCSV.remove(row)
+    if row[0] != oldID:
+        oldID = row[0]
+        ind = fullCSV.index(row)
+        # remove the first two rows (disclaimer and instructions)
+        for i in range(2): fullCSV.pop(ind)
+        row = fullCSV[ind]
+        if row[6] == ('swerve' or 'NaN'):
+            fullCSV.remove(row)
+        else:
+            failedSanCheck.append(oldID)
+            ind = fullCSV.index(row)
+            while oldID == fullCSV[ind][0]:
+                fullCSV.pop(ind)
 #_______________________________________________________________________________________________
 #_______________________________________________________________________________________________
 
