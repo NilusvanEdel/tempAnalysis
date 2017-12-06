@@ -73,9 +73,10 @@ ind = 0
 while ind < len(fullCSV):
     while ind <= len(fullCSV)-1 and ("disc" in fullCSV[ind][2]
                                      or "inst" in fullCSV[ind][2]):
-        print(fullCSV[ind])
+        #print(fullCSV[ind])
         fullCSV.pop(ind)
     if ind <= len(fullCSV)-1 and "sanity" in fullCSV[ind][2]:
+        counter += 1
         if "stay" in fullCSV[ind][6]:
             failedSanCheck.append(fullCSV[ind][0])
             oldID = fullCSV[ind][0]
@@ -89,10 +90,9 @@ while ind < len(fullCSV):
 
 
 print(failedSanCheck)
-"""
 print("failedSanCheck:", len(failedSanCheck))
 print("ParticipantCount: ", counter, " percentage of failures: ", len(failedSanCheck)/counter)
-"""
+
 #_______________________________________________________________________________________________
 #_______________________________________________________________________________________________
 
