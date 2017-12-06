@@ -3,9 +3,9 @@ import glob
 import os
 
 ### where the dataFiles are stored
-path = '/home/nilus/PycharmProjects/tempAnalysis/Data'
+path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'vr_data/raw'))
 ### where the created Files will be stored
-folder = '/home/nilus/PycharmProjects/tempAnalysis/'
+folder = os.path.abspath(os.path.join(os.path.dirname(__file__), 'vr_data/')) + '/'
 ### function to find the index in PostQuestionnaire
 def findItem(theList, item):
    return [ind for ind in range(len(theList)) if item in theList[ind]][0]
