@@ -73,21 +73,20 @@ ind = 0
 while ind < len(fullCSV):
     while ind <= len(fullCSV)-1 and ("disc" in fullCSV[ind][2]
                                      or "inst" in fullCSV[ind][2]):
-        #print(fullCSV[ind])
         fullCSV.pop(ind)
     if ind <= len(fullCSV)-1 and "sanity" in fullCSV[ind][2]:
         counter += 1
         if "stay" in fullCSV[ind][6]:
             failedSanCheck.append(fullCSV[ind][0])
-            oldID = fullCSV[ind][0]
-            while ind <= len(fullCSV) - 1 and fullCSV[ind][0] == oldID:
-                #print(fullCSV[ind])
-                fullCSV.pop(ind)
-        else:
-            fullCSV.pop(ind)
+        fullCSV.pop(ind)
         ind -= 1
     ind += 1
 
+i = 0
+while i < len(fullCSV):
+    while i <= len(fullCSV)-1 and fullCSV[i][0] in failedSanCheck:
+        fullCSV.pop(i)
+    i += 1
 
 print(failedSanCheck)
 print("failedSanCheck:", len(failedSanCheck))
