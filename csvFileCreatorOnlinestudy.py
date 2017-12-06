@@ -3,11 +3,11 @@ import glob
 import os
 
 path = "/home/nilus/PycharmProjects/tempAnalysis/"
-csvFile =  "/home/nilus/PycharmProjects/tempAnalysis/online_accept_data_nov30.csv"
+csvFile = "/home/nilus/PycharmProjects/tempAnalysis/online_accept_data_utf16.xls"
 fullCSV = []
 counter = 0
-with open(csvFile) as csvfile:
-    reader = csv.reader(csvfile, delimiter = ',')
+with open(csvFile, encoding='utf16') as csvfile:
+    reader = csv.reader(csvfile, delimiter = '\t')
     for row in reader:
         if counter == 0:
             firstRow = row
@@ -18,7 +18,7 @@ with open(csvFile) as csvfile:
 for row in fullCSV:
     if not any(row):
         fullCSV.remove(row)
-        print("row removed")
+        #print("row removed")
 # remove empty columns
 # transpose the matrix so index of firstRow equals row of matrix
 fullCSV = list(map(list, zip(*fullCSV)))
@@ -26,7 +26,7 @@ for column in fullCSV:
     if not any(column):
         del (firstRow[fullCSV.index(column)])
         fullCSV.remove(column)
-        print("column removed")
+        #print("column removed")
 
 # remove 'completed'
 fullCSV.pop(0)
@@ -54,7 +54,6 @@ for item in duplicates:
         del (firstRow[i - counter])
         fullCSV.pop(i - counter)
         counter += 1
-    print(fullCSV[index[0]])
 
 #remove Agent_Spec and Crowdsourcing_Code
 for i in range(2):
@@ -73,6 +72,7 @@ fullCSV = list(map(list, zip(*fullCSV)))
 # remove IDs who failed sanity Check
 oldID = -1
 failedSanCheck = []
+counter = 0
 for row in fullCSV:
   if row[0] != oldID:
       sanCheckHappened = False
@@ -81,21 +81,22 @@ for row in fullCSV:
       ind = fullCSV.index(row)
       # remove the first two rows (disclaimer and instructions)
       for i in range(2): fullCSV.pop(ind)
-      continue
-  if sanCheckHappened and passedSanCheck: continue
-  else:
-      if not sanCheckHappened:
-          if row[6] == 'swerve':
-              sanCheckHappened = True
-              passedSanCheck = True
-              fullCSV.remove(row)
-          else:
-              failedSanCheck.append(oldID)
-              sanCheckHappened = True
-              fullCSV.remove(row)
-      # if participant failed the sanChecked
+      row = fullCSV[ind]
+      if passedSanCheck: continue
       else:
-          fullCSV.remove(row)
+          if not sanCheckHappened:
+              if row[6] == ('swerve' or 'NaN'):
+                  sanCheckHappened = True
+                  passedSanCheck = True
+                  fullCSV.remove(row)
+              else:
+                  failedSanCheck.append(oldID)
+                  sanCheckHappened = True
+                  fullCSV.remove(row)
+                  #print("failedSanCheck")
+          # if participant failed the sanChecked
+          else:
+              fullCSV.remove(row)
 #_______________________________________________________________________________________________
 #_______________________________________________________________________________________________
 
