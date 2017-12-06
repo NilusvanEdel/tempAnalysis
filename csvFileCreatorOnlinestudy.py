@@ -76,6 +76,7 @@ counter = 0
 for row in fullCSV:
     if row[0] != oldID:
         oldID = row[0]
+        counter += 1
         ind = fullCSV.index(row)
         # remove the first two rows (disclaimer and instructions)
         for i in range(2): fullCSV.pop(ind)
@@ -87,6 +88,9 @@ for row in fullCSV:
             ind = fullCSV.index(row)
             while oldID == fullCSV[ind][0]:
                 fullCSV.pop(ind)
+print(failedSanCheck)
+print("failedSanCheck:", len(failedSanCheck))
+print("ParticipantCount: ", counter, " percentage of failures: ", len(failedSanCheck)/counter)
 #_______________________________________________________________________________________________
 #_______________________________________________________________________________________________
 
