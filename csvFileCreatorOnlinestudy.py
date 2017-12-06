@@ -66,31 +66,33 @@ fullCSV.pop(6)
 # transpose the matrix again
 fullCSV = list(map(list, zip(*fullCSV)))
 
-
-#_________________________________________________________________________________________________
-#_________________________________________________________________________________________________
-# remove IDs who failed sanity Check
-oldID = -1
 failedSanCheck = []
 counter = 0
-for row in fullCSV:
-    if row[0] != oldID:
-        oldID = row[0]
-        counter += 1
-        ind = fullCSV.index(row)
-        # remove the first two rows (disclaimer and instructions)
-        for i in range(2): fullCSV.pop(ind)
-        row = fullCSV[ind]
-        if row[6] == ('swerve' or 'NaN'):
-            fullCSV.remove(row)
-        else:
-            failedSanCheck.append(oldID)
-            ind = fullCSV.index(row)
-            while oldID == fullCSV[ind][0]:
+oldID = -1
+ind = 0
+while ind < len(fullCSV):
+    while ind <= len(fullCSV)-1 and ("disc" in fullCSV[ind][2]
+                                     or "inst" in fullCSV[ind][2]):
+        print(fullCSV[ind])
+        fullCSV.pop(ind)
+    if ind <= len(fullCSV)-1 and "sanity" in fullCSV[ind][2]:
+        if "stay" in fullCSV[ind][6]:
+            failedSanCheck.append(fullCSV[ind][0])
+            oldID = fullCSV[ind][0]
+            while ind <= len(fullCSV) - 1 and fullCSV[ind][0] == oldID:
+                #print(fullCSV[ind])
                 fullCSV.pop(ind)
+        else:
+            fullCSV.pop(ind)
+        ind -= 1
+    ind += 1
+
+
 print(failedSanCheck)
+"""
 print("failedSanCheck:", len(failedSanCheck))
 print("ParticipantCount: ", counter, " percentage of failures: ", len(failedSanCheck)/counter)
+"""
 #_______________________________________________________________________________________________
 #_______________________________________________________________________________________________
 
