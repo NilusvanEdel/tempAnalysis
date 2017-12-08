@@ -2,8 +2,11 @@ import csv
 import glob
 import os
 
-path = "/home/nilus/PycharmProjects/tempAnalysis/"
-csvFile = "/home/nilus/PycharmProjects/tempAnalysis/online_accept_data_utf16.xls"
+### where the dataFiles are stored
+path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'online_accept_data')) + '/'
+### where the created Files will be stored
+csvFile = os.path.abspath(os.path.join(os.path.dirname(__file__), 'online_accept_data/raw/data.xls'))
+
 fullCSV = []
 counter = 0
 with open(csvFile, encoding='utf16') as csvfile:

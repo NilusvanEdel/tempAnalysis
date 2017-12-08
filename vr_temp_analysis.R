@@ -1,12 +1,13 @@
 library(lme4)
 library(cowplot)
+library(vcdExtra)
 
 # read the dataframes
-child.data <- read.csv("childrenCSV.csv")
+child.data <- read.csv("vr_data/childrenCSV.csv")
 
-carsac.data <- read.csv("selfSacCSV.csv")
+carsac.data <- read.csv("vr_data/selfSacCSV.csv")
 
-sidewalk.data <- read.csv("sidewalkCSV.csv")
+sidewalk.data <- read.csv("vr_data/sidewalkCSV.csv")
 
 # clean the factor labels
 
@@ -65,26 +66,28 @@ sidewalk.data <- subset(sidewalk.data, passedSanCheck == "True")
 # run the GLMMs
 child.glmm <- glmer(decision == "hitChildren" ~ perspective * driver +
                         (1 | participant.ID) + gender, family = "binomial",
-                    data = child.data)
+                    data = child.data, control = glmerControl(optimizer = "bobyqa",  optCtrl=list(maxfun=2e5)))
 
 carsac.glmm <- glmer(decision == "selfSacrifice" ~ perspective *
                          driver + (1 | participant.ID) + gender,
-                     family = "binomial", data = carsac.data)
+                     family = "binomial", data = carsac.data, control = glmerControl(optimizer = "bobyqa",  optCtrl=list(maxfun=2e5)))
+
 
 sidewalk.glmm <- glmer(decision == "hitSidewalk" ~ perspective * driver +
                            (1 | participant.ID) + gender, family = "binomial",
-                       data = sidewalk.data)
+                       data = sidewalk.data, control = glmerControl(optimizer = "bobyqa",  optCtrl=list(maxfun=2e5)))
 
-# plot the proportions
-child.plot <- ggplot(child.data, aes(x = driver, fill = decision)) +
-    geom_bar(position = "fill") + facet_grid (.~perspective) +
-    xlab("Driver, Perspective") + ylab("Proportion of responses")
+# plot the proportions as mosaic plots
 
-carsac.plot <- ggplot(carsac.data, aes(x = driver, fill = decision)) +
-    geom_bar(position = "fill") + facet_grid (.~perspective) +
-    xlab("Driver, Perspective") + ylab("Proportion of responses")
+child.xtabs <- xtabs(~ driver + perspective + decision, data=child.data)
 
-sidewalk.plot <-
-    ggplot(sidewalk.data, aes(x = driver,fill = decision)) +
-    geom_bar(position = "fill") + facet_grid (.~perspective) +
-    xlab("Driver, Perspective") + ylab("Proportion of responses")
+carsac.xtabs <- xtabs(~ driver + perspective + decision, data=carsac.data)
+
+sidewalk.xtabs <- xtabs(~ driver + perspective + decision, data=sidewalk.data)
+
+
+child.mosaic <- mosaic(child.xtabs, gp = gpar(fill = c("blue","red")))
+
+carsac.mosaic <- mosaic(carsac.xtabs, gp = gpar(fill=c("blue","red")))
+
+sidewalk.mosaic <- mosaic(sidewalk.xtabs, gp = gpar(fill=c("blue","red")))
