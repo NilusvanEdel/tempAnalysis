@@ -1,5 +1,4 @@
 library(lme4)
-library(cowplot)
 library(vcdExtra)
 
 # read the dataframes
@@ -65,29 +64,44 @@ sidewalk.data <- subset(sidewalk.data, passedSanCheck == "True")
 
 # run the GLMMs
 child.glmm <- glmer(decision == "hitChildren" ~ perspective * driver +
-                        (1 | participant.ID) + gender, family = "binomial",
-                    data = child.data, control = glmerControl(optimizer = "bobyqa",  optCtrl=list(maxfun=2e5)))
+                        (1 | participant.ID) + gender,
+                    family = "binomial", data = child.data,
+                    control = glmerControl(optimizer = "bobyqa",  optCtrl = list(maxfun = 2e5)))
 
 carsac.glmm <- glmer(decision == "selfSacrifice" ~ perspective *
                          driver + (1 | participant.ID) + gender,
-                     family = "binomial", data = carsac.data, control = glmerControl(optimizer = "bobyqa",  optCtrl=list(maxfun=2e5)))
+                     family = "binomial", data = carsac.data,
+                     control = glmerControl(optimizer = "bobyqa",  optCtrl = list(maxfun = 2e5)))
 
 
 sidewalk.glmm <- glmer(decision == "hitSidewalk" ~ perspective * driver +
-                           (1 | participant.ID) + gender, family = "binomial",
-                       data = sidewalk.data, control = glmerControl(optimizer = "bobyqa",  optCtrl=list(maxfun=2e5)))
+                           (1 | participant.ID) + gender,
+                       family = "binomial", data = sidewalk.data,
+                       control = glmerControl(optimizer = "bobyqa",  optCtrl = list(maxfun = 2e5)))
 
 # plot the proportions as mosaic plots
 
-child.xtabs <- xtabs(~ driver + perspective + decision, data=child.data)
+child.xtabs <- xtabs(~ driver + perspective + decision, data = child.data)
 
-carsac.xtabs <- xtabs(~ driver + perspective + decision, data=carsac.data)
+carsac.xtabs <- xtabs(~ driver + perspective + decision, data = carsac.data)
 
-sidewalk.xtabs <- xtabs(~ driver + perspective + decision, data=sidewalk.data)
+sidewalk.xtabs <- xtabs(~ driver + perspective + decision, data = sidewalk.data)
 
 
-child.mosaic <- mosaic(child.xtabs, gp = gpar(fill = c("blue","red")))
 
-carsac.mosaic <- mosaic(carsac.xtabs, gp = gpar(fill=c("blue","red")))
+# plot graphs to files
+png(filename = "child_mosaic.png")
+child.mosaic <- mosaic(child.xtabs,
+                       gp = gpar(fill = c("light gray", "dark gray")))
+dev.off()
 
-sidewalk.mosaic <- mosaic(sidewalk.xtabs, gp = gpar(fill=c("blue","red")))
+png(filename = "carsac_mosaic.png")
+carsac.mosaic <- mosaic(carsac.xtabs,
+                        gp = gpar(fill = c("light gray", "dark gray")))
+dev.off()
+
+png(filename = "sidewalk_mosaic.png")
+
+sidewalk.mosaic <- mosaic(sidewalk.xtabs,
+                          gp = gpar(fill = c("light gray", "dark gray")))
+dev.off()

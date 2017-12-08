@@ -11,7 +11,7 @@ carped.sub <- subset(data, scenario == "carsac")
 # ensure data is of correct type
 carped.sub$first_vid <- factor(carped.sub$first_vid)
 carped.sub$scenario <- factor(carped.sub$scenario)
-carped.sub$Subject_Id<- factor(carped.sub$Subject_Id)
+carped.sub$Subject_Id <- factor(carped.sub$Subject_Id)
 carped.sub$ratio <- as.numeric(carped.sub$ratio) - 1
 carped.sub$response <- factor(carped.sub$response)
 carped.sub$PERSP <- factor(carped.sub$PERSP)
@@ -21,31 +21,62 @@ carped.sub$DRIVER_TYPE <- factor(carped.sub$DRIVER_TYPE)
 # perform GLMM for car-ped dilemmas
 
 carped.glmm <- glmer(response ~ ratio * PERSP * DRIVER_TYPE + (1 | Subject_Id),
-                     data=carped.sub, family=binomial, control = glmerControl(optimizer = "bobyqa", optCtrl=list(maxfun=2e5)))
+                     data = carped.sub,
+                     family = binomial,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
 
 # plot GLMM
 
+
+label_names <- c("AV" = "Self-driving",
+                 "HUMAN" = "Human",
+                 "sidewalk" = "Sidewalk",
+                 "road" = "Road")
+
+
 carped.plot <- ggplot(carped.glmm,
-                      aes(as.numeric(ratio), as.numeric(response) - 1, color=PERSP, fill=PERSP)) +
-    stat_smooth(method="glm", se=F, method.args=list(family="binomial")) +
-    #geom_point(position=position_jitter(height=0.03, width=0)) +
-    xlab("Lives-risked ratio") + ylab("P(Choosing swerve as more acceptable)") +
-    facet_grid(. ~ DRIVER_TYPE) + theme_cowplot(font_size = 11)
+                      aes(as.numeric(ratio),
+                          as.numeric(response) - 1,
+                          color = PERSP)) +
+    stat_smooth(method = "glm", se = F,
+                method.args = list(family = "binomial")) +
+   # geom_point(position=position_jitter(height=0.03, width=0)) +
+    facet_grid(. ~ DRIVER_TYPE, labeller = as_labeller(label_names)) +
+    theme_cowplot(font_size = 10) +
+    scale_x_continuous(name = "Lives-risked ratio", limits = c(1, 4)) +
+    scale_y_continuous(name = "P(Choosing swerve as more acceptable)",
+                       limits = c(0, 1)) + coord_equal(ratio = 3) +
+    scale_color_manual(name = "Perspective",
+                       labels = c("Car occupant",
+                                  "Bird's-eye view",
+                                  "Pedestrian"),
+                       values = c("red3", "skyblue", "orange1" ))
+
+# save file
+png(file = "carped_plot.png")
+carped.plot
+dev.off()
 
 
 # plot each subjects responses
 
-carped_subj.plot <- ggplot(carped.glmm,
-                      aes(as.numeric(ratio), as.numeric(response) - 1, color=PERSP, linetype=DRIVER_TYPE)) +
-  #  stat_smooth(method="glm", se=F, method.args=list(family="binomial")) +
-    geom_point(position = position_jitter(height=0.03, width=0)) +
+carped_subj.plot <- ggplot(carped.glmm, aes(x = as.numeric(ratio),
+                                            y = as.numeric(response) - 1,
+                                            color = PERSP,
+                                            linetype = DRIVER_TYPE)) +
+    stat_smooth(method = "glm", se = F,
+                method.args = list(family = "binomial")) +
     geom_line() +
     xlab("Lives-risked ratio") + ylab("Response") +
-    facet_wrap(PERSP ~ Subject_Id) + theme_cowplot(font_size = 8)
+    facet_wrap(PERSP ~ Subject_Id) +
+    theme_cowplot(font_size = 8) + coord_equal(ratio = 1)
+
 
 # create subset for ped-ped dilemmas
 
 pedped.sub <- subset(data, (scenario == "sidewalk") | (scenario == "road"))
+
 # ensure data type is correct
 
 pedped.sub$first_vid <- factor(pedped.sub$first_vid)
@@ -60,23 +91,55 @@ pedped.sub$DRIVER_TYPE <- factor(pedped.sub$DRIVER_TYPE)
 # perform GLMM for ped-ped dilemmas
 
 pedped.glmm <- glmer(response ~ ratio * PERSP * DRIVER_TYPE +
-                      ratio * DRIVER_TYPE * scenario + (1 + ratio + scenario | Subject_Id),
-                     data=pedped.sub, family=binomial, control = glmerControl(optimizer = "nloptwrap",  optCtrl=list(maxfun=2e5)))
+                         ratio * DRIVER_TYPE * scenario +
+                         (1 + ratio + scenario | Subject_Id),
+                     data = pedped.sub, family = binomial,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
 
 # plot GLMM
 
+
 pedped.plot <- ggplot(pedped.glmm,
-                      aes(ratio, as.numeric(response) - 1, color=PERSP, fill=PERSP)) +
-    stat_smooth(method="glm", se=F, method.args=list(family="binomial")) +
-   # geom_point(position=position_jitter(height=0.03, width=0)) +
-    xlab("Lives-risked ratio") + ylab("P(Choosing swerve as more acceptable)") +
-    facet_grid(scenario ~ DRIVER_TYPE) + theme_cowplot(font_size = 12)
+                      aes(ratio, as.numeric(response) - 1, color = PERSP)) +
+    stat_smooth(method = "glm", se = F,
+                method.args = list(family = "binomial")) +
+    scale_x_continuous(name = "Lives-risked ratio", limits = c(1, 4)) +
+    scale_y_continuous(name = "P(Choosing swerve as more acceptable)",
+                       limits = c(0, 1)) + coord_equal(ratio = 3) +
+    scale_color_manual(name = "Perspective",
+                       labels = c("Car occupant",
+                                  "Bird's-eye view",
+                                  "Pedestrian straight ahead",
+                                  "Pedestrian to side"),
+                       values = c("red",
+                                  "skyblue",
+                                  "orange",
+                                  "darkorange3" ) ) +
+    facet_grid( scenario ~ DRIVER_TYPE,
+               labeller = as_labeller(label_names)) +
+    theme_cowplot(font_size = 10)
+
+# save to file
+png(file = "pedped_plot.png")
+pedped.plot
+dev.off()
 
 # plot individual responses
 
 pedped_subj.plot <- ggplot(pedped.glmm,
-                      aes(ratio, as.numeric(response) - 1, color=PERSP:DRIVER_TYPE, linetype=scenario)) +
-    stat_smooth(method="glm", se=F, method.args=list(family="binomial")) +
-   # geom_point(position=position_jitter(height=0.03, width=0)) +
-    xlab("Lives-risked ratio") + ylab("Response")  +
-    facet_wrap(PERSP ~ Subject_Id) + theme_cowplot(font_size = 8)
+                           aes(ratio, as.numeric(response) - 1,
+                               color = PERSP:DRIVER_TYPE,
+                               linetype = scenario)) +
+    stat_smooth(method = "glm", se = F,
+                method.args = list(family = "binomial")) +
+    facet_wrap(PERSP ~ Subject_Id) + theme_cowplot(font_size = 8) +
+    scale_x_continuous(name = "Lives-risked ratio", limits = c(1, 4)) +
+    scale_y_continuous(name = "P(Choosing swerve as more acceptable)",
+                       limits = c(0, 1)) + coord_equal(ratio = 4) +
+    scale_color_manual(name = "Perspective",
+                       labels = c("Car occupant",
+                                "Bird's-eye view",
+                                "Pedestrian straight ahead",
+                                "Pedestrian to side"),
+                       values = c("red3", "skyblue", "orange1", "darkorange4"))
