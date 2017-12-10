@@ -1,6 +1,10 @@
 library(lme4)
 library(cowplot)
+library(lsmeans)
 library(plyr)
+library(afex)
+
+
 
 # read the online_acceptibility data file
 data <- read.csv("online_accept_data/shortenedOnlineCSV.csv")
@@ -20,11 +24,18 @@ carped.sub$DRIVER_TYPE <- factor(carped.sub$DRIVER_TYPE)
 
 # perform GLMM for car-ped dilemmas
 
-carped.glmm <- glmer(response ~ ratio * PERSP * DRIVER_TYPE + (1 | Subject_Id),
-                     data = carped.sub,
-                     family = binomial,
+# center ratio variable
+
+carped.sub$ratio_c <- scale(carped.sub$ratio)
+
+carped.glmm <- mixed(response ~ ratio_c * PERSP * DRIVER_TYPE +
+                         (1 | Subject_Id),
+                     method = "LRT", family = binomial,
+                     data = carped.sub, args_test = list(nsim = 10),
                      control = glmerControl(optimizer = "bobyqa",
                                             optCtrl = list(maxfun = 2e5)))
+
+
 
 # plot GLMM
 
@@ -35,13 +46,12 @@ label_names <- c("AV" = "Self-driving",
                  "road" = "Road")
 
 
-carped.plot <- ggplot(carped.glmm,
-                      aes(as.numeric(ratio),
+carped.plot <- ggplot(carped.glmm$full_model,
+                      aes(ratio,
                           as.numeric(response) - 1,
                           color = PERSP)) +
     stat_smooth(method = "glm", se = F,
                 method.args = list(family = "binomial")) +
-   # geom_point(position=position_jitter(height=0.03, width=0)) +
     facet_grid(. ~ DRIVER_TYPE, labeller = as_labeller(label_names)) +
     theme_cowplot(font_size = 10) +
     scale_x_continuous(name = "Lives-risked ratio", limits = c(1, 4)) +
@@ -90,17 +100,21 @@ pedped.sub$DRIVER_TYPE <- factor(pedped.sub$DRIVER_TYPE)
 
 # perform GLMM for ped-ped dilemmas
 
-pedped.glmm <- glmer(response ~ ratio * PERSP * DRIVER_TYPE +
-                         ratio * DRIVER_TYPE * scenario +
-                         (1 + ratio + scenario | Subject_Id),
-                     data = pedped.sub, family = binomial,
+
+pedped.sub$ratio_c <- scale(pedped.sub$ratio)
+
+pedped.glmm <- mixed(response ~ ratio_c * PERSP * DRIVER_TYPE +
+                         ratio_c * DRIVER_TYPE * scenario  +
+                         (1 + ratio_c + scenario | Subject_Id),
+                     method = "LRT", family = binomial,  # possibly change method to PB
+                     data = pedped.sub, args_test = list(nsim = 10),
                      control = glmerControl(optimizer = "bobyqa",
                                             optCtrl = list(maxfun = 2e5)))
 
 # plot GLMM
 
 
-pedped.plot <- ggplot(pedped.glmm,
+pedped.plot <- ggplot(pedped.glmm$full_model,
                       aes(ratio, as.numeric(response) - 1, color = PERSP)) +
     stat_smooth(method = "glm", se = F,
                 method.args = list(family = "binomial")) +
@@ -133,13 +147,25 @@ pedped_subj.plot <- ggplot(pedped.glmm,
                                linetype = scenario)) +
     stat_smooth(method = "glm", se = F,
                 method.args = list(family = "binomial")) +
+    geom_point(position = position_jitter(height = 0.03, width = 0)) +
     facet_wrap(PERSP ~ Subject_Id) + theme_cowplot(font_size = 8) +
     scale_x_continuous(name = "Lives-risked ratio", limits = c(1, 4)) +
-    scale_y_continuous(name = "P(Choosing swerve as more acceptable)",
-                       limits = c(0, 1)) + coord_equal(ratio = 4) +
-    scale_color_manual(name = "Perspective",
-                       labels = c("Car occupant",
-                                "Bird's-eye view",
-                                "Pedestrian straight ahead",
-                                "Pedestrian to side"),
-                       values = c("red3", "skyblue", "orange1", "darkorange4"))
+    scale_y_continuous(name = "P(Choosing swerve as more acceptable)")
+
+
+# followup tests: see https://cran.r-project.org/web/packages/lsmeans/vignettes/using-lsmeans.pdf section 12
+
+
+# this determines the differential effect of ratio depending on perspective and driver
+
+carped_int <- lstrends(carped.glmm, ~ PERSP:DRIVER_TYPE, var = "ratio_c")
+
+
+carped_int.comp <- summary(as.glht(contrast(pairs(carped_int), by = NULL)),
+                      test = adjusted("free"))
+
+
+pedped_int1 <- lstrends(pedped.glmm, ~ PERSP:DRIVER_TYPE, var = "ratio_c")
+
+pedped_int1.comp <-  summary(as.glht(contrast(pairs(pedped_int1), by = NULL)),
+                      test = adjusted("free"))
