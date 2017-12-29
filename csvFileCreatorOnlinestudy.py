@@ -91,6 +91,18 @@ while i < len(fullCSV):
         fullCSV.pop(i)
     i += 1
 
+ques_results = []
+ind_2 = 0
+while ind_2 < len(fullCSV):
+    if "questionnaire_h" in fullCSV[ind_2][2] or "quesionnaire_av" in fullCSV[ind_2][2]:
+        ques_results = fullCSV[ind_2][9:16]
+        sub_id = fullCSV[ind_2][0]
+        for i in range(len(fullCSV)-1):
+            if fullCSV[i][0] == sub_id:
+                fullCSV[i][9:16] = ques_results
+        fullCSV.pop(ind_2)
+    ind_2 += 1
+
 print(failedSanCheck)
 print("failedSanCheck:", len(failedSanCheck))
 print("ParticipantCount: ", counter, " percentage of failures: ", len(failedSanCheck)/counter)
