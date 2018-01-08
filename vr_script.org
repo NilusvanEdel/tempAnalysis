@@ -1,0 +1,348 @@
+#+TITLE:Virtual reality study analysis
+#+LaTeX_CLASS: koma-article
+#+LaTeX_CLASS_OPTIONS: [colorlinks=true,linkcolor=black]
+#+AUTHOR: Autonomous Vehicle Study Project 2017
+-----
+* Libraries
+
+#+BEGIN_SRC R :session *R* :results none
+library(lme4)
+library(vcdExtra)
+library(lsmeans)
+library(afex)
+library(cowplot)
+library(multcomp)
+library(DHARMa)
+library(xtable)
+library(rockchalk)
+library(tikzDevice)
+library(parallel)
+#+END_SRC
+
+* Read the data files and rename
+
+#+BEGIN_SRC R :session *R* :results none
+# child
+child.data <- read.csv("vr_data/childrenCSV.csv")
+
+
+# rename gender variable
+colnames(child.data)[2] <- "gender"
+
+# rename driver variable
+colnames(child.data)[3] <- "motorist"
+
+# rename levels for driver
+child.data$motorist <- factor(child.data$motorist,
+                            levels = c("False", "True"),
+                            labels = c("human", "self-driving"))
+
+
+# rename levels for gender
+child.data$gender <- factor(child.data$gender,
+                            levels = c("False", "True"),
+                            labels = c("female", "male"))
+
+
+# carsac
+carsac.data <- read.csv("vr_data/selfSacCSV.csv")
+
+
+# rename gender variable
+colnames(carsac.data)[2] <- "gender"
+
+# rename driver variable
+colnames(carsac.data)[3] <- "motorist"
+
+# rename levels for driver
+carsac.data$motorist <- factor(carsac.data$motorist,
+                            levels = c("False", "True"),
+                            labels = c("human", "self-driving"))
+
+
+# rename levels for gender
+carsac.data$gender <- factor(carsac.data$gender,
+                            levels = c("False", "True"),
+                            labels = c("female", "male"))
+
+
+# sidewalk
+sidewalk.data <- read.csv("vr_data/sidewalkCSV.csv")
+
+
+# rename gender variable
+colnames(sidewalk.data)[2] <- "gender"
+
+# rename driver variable
+colnames(sidewalk.data)[3] <- "motorist"
+
+# rename levels for driver
+sidewalk.data$motorist <- factor(sidewalk.data$motorist,
+                            levels = c("False", "True"),
+                            labels = c("human", "self-driving"))
+
+
+# rename levels for gender
+sidewalk.data$gender <- factor(sidewalk.data$gender,
+                            levels = c("False", "True"),
+                            labels = c("female", "male"))
+
+
+
+#+END_SRC
+
+* Child vs adult
+** Create subset that excludes sanity check failures
+
+ #+BEGIN_SRC R :session *R* :results none
+
+# create subsets that only include those that passed sanity
+child.sub <- subset(child.data, child.data$passedSanCheck == "True")
+child.sub$participant.ID <- factor(child.sub$participant.ID)
+
+ #+END_SRC
+** Run the GLMM
+#+BEGIN_SRC R :session *R* :results output :exports both
+set.seed(123)
+(nc <- detectCores())
+cl <- makeCluster(rep("localhost", nc))
+
+child_glmm <- mixed(decision ~ perspective + motorist +
+                        perspective:motorist +
+                        trial +
+                        (1 | participant.ID),
+                    method = "PB",
+                    family = "binomial", data = child.sub,
+                    args_test = list(nsim = 100, cl = cl), cl = cl,
+                    control = glmerControl(optimizer = "bobyqa",
+                                           optCtrl = list(maxfun = 2e5)))
+child_glmm
+#+END_SRC
+
+** Check residuals
+#+BEGIN_SRC R :session *R* :file child_plot1.png :results graphics :exports both
+set.seed(123)
+child_glmm.resid <- simulateResiduals(fittedModel = child_glmm$full_model, n = 2000)
+child_glmm_resid.plot <- plotSimulatedResiduals(simulationOutput = child_glmm.resid)
+
+
+#+END_SRC
+
+#+RESULTS:
+[[file:child_plot1.png]]
+
+**  Plot results
+Create predicted data
+#+BEGIN_SRC R :session *R* :file child_plot2.png :results graphics :exports both
+
+# create predicted data for plotting
+trial <- rep(c("smallGroups", "largeGroups"), 8)
+perspective <- rep(c("Observer", "Passenger", "PedLarge", "PedSmall"), each = 2)
+motorist <- rep(c("human", "self-driving"), each = 8)
+child_plot.data <- data.frame(trial, perspective, motorist)
+
+child_plot.data$decision <- predict(child_glmm$full_model,
+                                     newdata = child_plot.data,
+                                     re.form = NA,
+                                     type = "response")
+
+# plot predicted data
+child.plot <- ggplot(child_plot.data,
+                      aes(trial,
+                          as.numeric(decision),
+                          color = perspective)) +
+    geom_point() +
+    geom_line(aes(group = perspective)) +
+    facet_grid(. ~ motorist) +
+    theme_cowplot(font_size = 10) + geom_point() +
+    scale_y_continuous(name = "P(Choosing `hit children' as more acceptable)",
+                       limits = c(0, 1)) + coord_equal(ratio = 3) +
+    scale_color_manual(name = "Perspective",
+                       labels = c("Bystander",
+                                  "Passenger",
+                                  "Pedestrian wAdults",
+                                  "Pedestrian wChildren"),
+                       values = c("red3", "skyblue", "orange1" , "purple"))
+
+
+child2.plot <- ggplot(child_glmm$full_model,
+                      aes(trial, decision,
+                          color = perspective)) +
+    geom_point() + facet_wrap(.~motorist)
+
+child.plot
+
+
+#+END_SRC
+
+#+RESULTS:
+[[file:plot2.png]]
+
+* Occupant vs pedestrian
+** Create subset that excludes sanity check failures
+
+ #+BEGIN_SRC R :session *R* :results none
+
+# create subsets that only include those that passed sanity
+carsac.sub <- subset(carsac.data, carsac.data$passedSanCheck == "True")
+carsac.sub$participant.ID <- factor(carsac.sub$participant.ID)
+
+carsac.sub$perspective <- combineLevels(carsac.sub$perspective, levs=c("PedLarge", "PedSmall"), newLabel = "Pedestrian")
+
+ #+END_SRC
+** Run the GLMM
+#+BEGIN_SRC R :session *R* :results output :exports both
+set.seed(123)
+(nc <- detectCores())
+cl <- makeCluster(rep("localhost", nc))
+
+carsac_glmm <- mixed(decision ~ perspective + motorist +
+                        perspective:motorist +
+                        trial +
+                        (1 | participant.ID),
+                    method = "PB",
+                    family = "binomial", data = carsac.sub,
+                    args_test = list(nsim = 100, cl = cl), cl = cl,
+                    control = glmerControl(optimizer = "bobyqa",
+                                           optCtrl = list(maxfun = 2e5)))
+
+carsac_glmm
+#+END_SRC
+
+** Check residuals
+#+BEGIN_SRC R :session *R* :file carsac_plot1.png :results graphics :exports both
+set.seed(123)
+carsac_glmm.resid <- simulateResiduals(fittedModel = carsac_glmm$full_model, n = 2000)
+carsac_glmm_resid.plot <- plotSimulatedResiduals(simulationOutput = carsac_glmm.resid)
+
+
+#+END_SRC
+
+#+RESULTS:
+[[file:plot1.png]]
+
+**  Plot results
+Create predicted data
+#+BEGIN_SRC R :session *R* :file carsac_plot2.png :results graphics :exports both
+
+# create predicted data for plotting
+trial <- rep(c("cityR", "mountain"), 6)
+perspective <- rep(c("Observer", "Passenger", "Pedestrian"), each = 2)
+motorist <- rep(c("human", "self-driving"), each = 6)
+carsac_plot.data <- data.frame(trial, perspective, motorist)
+
+carsac_plot.data$decision <- predict(carsac_glmm$full_model,
+                                     newdata = carsac_plot.data,
+                                     re.form = NA,
+                                     type = "response")
+
+# plot predicted data
+carsac.plot <- ggplot(carsac_plot.data,
+                      aes(trial,
+                          as.numeric(decision),
+                          color = perspective)) +
+    geom_point() +
+    geom_line(aes(group = perspective)) +
+    facet_grid(. ~ motorist) +
+    theme_cowplot(font_size = 10) + geom_point() +
+    scale_y_continuous(name = "P(Choosing `crash car' as more acceptable)",
+                       limits = c(0, 1)) + coord_equal(ratio = 3) +
+    scale_color_manual(name = "Perspective",
+                       labels = c("Bystander",
+                                  "Passenger",
+                                  "Pedestrian"),
+                       values = c("red3", "skyblue", "orange1" , "purple"))
+
+
+carsac2.plot <- ggplot(carsac_glmm$full_model,
+                      aes(trial, decision,
+                          color = perspective)) +
+    geom_point() + facet_wrap(.~motorist)
+
+carsac.plot
+
+
+#+END_SRC
+
+#+RESULTS:
+[[file:carsac_plot2.png]]
+* Sidewalk vs road
+** Create subset that excludes sanity check failures
+
+ #+BEGIN_SRC R :session *R* :results none
+
+# create subsets that only include those that passed sanity
+sidewalk.sub <- subset(sidewalk.data, sidewalk.data$passedSanCheck == "True")
+sidewalk.sub$participant.ID <- factor(sidewalk.sub$participant.ID)
+
+ #+END_SRC
+** Run the GLMM
+#+BEGIN_SRC R :session *R* :results output :exports both
+set.seed(123)
+(nc <- detectCores())
+cl <- makeCluster(rep("localhost", nc))
+
+sidewalk_glmm <- mixed(decision == "hitSidewalk" ~ perspective + motorist +
+                        perspective:motorist +
+                        trial +
+                        (1 | participant.ID),
+                    method = "PB",
+                    family = "binomial", data = sidewalk.sub,
+                    args_test = list(nsim = 100, cl = cl), cl = cl,
+                    control = glmerControl(optimizer = "bobyqa",
+                                           optCtrl = list(maxfun = 2e5)))
+
+sidewalk_glmm
+#+END_SRC
+
+** Check residuals
+#+BEGIN_SRC R :session *R* :file sidewalk_plot1.png :results graphics :exports both
+set.seed(123)
+sidewalk_glmm.resid <- simulateResiduals(fittedModel = sidewalk_glmm$full_model, n = 2000)
+sidewalk_glmm_resid.plot <- plotSimulatedResiduals(simulationOutput = sidewalk_glmm.resid)
+
+
+#+END_SRC
+
+#+RESULTS:
+[[file:plot1.png]]
+
+**  Plot results
+Create predicted data
+#+BEGIN_SRC R :session *R* :file sidewalk_plot2.png :results graphics :exports both
+
+# create predicted data for plotting
+trial <- rep(c("smallGroups", "largeGroups"), 8)
+perspective <- rep(c("Observer", "Passenger", "PedLarge", "PedSmall"), each = 2)
+motorist <- rep(c("human", "self-driving"), each = 8)
+sidewalk_plot.data <- data.frame(trial, perspective, motorist)
+
+sidewalk_plot.data$decision <- predict(sidewalk_glmm$full_model,
+                                     newdata = sidewalk_plot.data,
+                                     re.form = NA,
+                                     type = "response")
+
+# plot predicted data
+sidewalk.plot <- ggplot(sidewalk_plot.data,
+                      aes(trial,
+                          as.numeric(decision),
+                          color = perspective)) +
+    geom_point() +
+    geom_line(aes(group = perspective)) +
+    facet_grid(. ~ motorist) +
+    theme_cowplot(font_size = 10) + geom_point() +
+    scale_y_continuous(name = "P(Choosing `hit sidewalk' as more acceptable)",
+                       limits = c(0, 1)) + coord_equal(ratio = 3) +
+    scale_color_manual(name = "Perspective",
+                       labels = c("Bystander",
+                                  "Passenger",
+                                  "Pedestrian on road",
+                                  "Pedestrian on sidewalk"),
+                       values = c("red3", "skyblue", "orange1" , "purple"))
+
+sidewalk.plot
+
+#+END_SRC
+
+#+RESULTS:
+[[file:sidewalk_plot2.png]]
