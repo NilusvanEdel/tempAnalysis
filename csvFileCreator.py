@@ -10,6 +10,8 @@ folder = os.path.abspath(os.path.join(os.path.dirname(__file__), 'vr_data/')) + 
 def findItem(theList, item):
    return [ind for ind in range(len(theList)) if item in theList[ind]][0]
 
+from fixVRPostQues import fixVRPostQues
+fixVRPostQues()
 os.chdir(path)
 fileList = []
 combinedCSV = []
@@ -56,6 +58,7 @@ counter = 0
 with open(folder +'/'+ 'combinedCSV.csv') as csvfile:
     reader = csv.reader(csvfile, delimiter=',')
     oldID = 0
+    noSimIDFail = []
     for dataSplit in reader:
         if counter == 0:
             counter += 1
@@ -83,10 +86,14 @@ with open(folder +'/'+ 'combinedCSV.csv') as csvfile:
             newLine.append('PedLarge')
         newLine.append(sanityCheckPassed)
         try:
-            ind = postQues[findItem(postQues, oldID)]
+            if oldID == '1':
+                ind = postQues[findItem(postQues, "FIX01")]
+            else:
+                ind = postQues[findItem(postQues, oldID)]
             newLine.append(ind[11])
             newLine.append(ind[12])
         except IndexError:
+            noSimIDFail.append(oldID)
             for i in range(2): newLine.append("NoSimilarID")
         ### difficultyOfDecision
         newLine.append(dataSplit[10])
@@ -146,3 +153,5 @@ with open(folder+'selfSacCSV.csv', 'w+') as myfile:
     wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
     for i in range(len(selfSacCSV)):
         wr.writerow(selfSacCSV[i])
+noSimIDFail = list(dict.fromkeys(noSimIDFail))
+print("Failures of combining online with VR data: ", len(list(dict.fromkeys(noSimIDFail))))
