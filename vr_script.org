@@ -90,6 +90,48 @@ sidewalk.data$gender <- factor(sidewalk.data$gender,
 
 
 #+END_SRC
+* Manipulation check
+We use a chi-sq test to see if there is a difference in which party
+the participants identify with.
+
+#+BEGIN_SRC R :session *R* :results output :exports both
+set.seed(123)
+
+manip_check.sub <- subset(child.data, trial == "largeGroups")
+
+#manip_check.sub$perspective <- combineLevels(manip_check.sub$
+ #                                            perspective, levs = c("PedLarge", "PedSmall"), newLabel = c("Pedestrian"))
+
+manip_check.xtab <- xtabs(~perspective + perceivedIden, data = manip_check.sub)
+
+manip_check.chisq <- chisq.test(manip_check.xtab, simulate.p.value = TRUE)
+
+manip_check.chisq
+#+END_SRC
+
+#+RESULTS:
+:
+: 	Pearson's Chi-squared test with simulated p-value (based on 2000
+: 	replicates)
+:
+: data:  manip_check.xtab
+: X-squared = 93.332, df = NA, p-value = 0.0004998
+
+Follow up comparisons:
+
+#+BEGIN_SRC R :session *R* :results output :exports both
+manip_check.post <- chisq.post.hoc(manip_check.xtab)
+manip_check.post
+#+END_SRC
+
+#+RESULTS:
+: Adjusted p-values used the fdr method.
+:                 comparison raw.p adj.p
+: 1   Observer vs. Passenger     0     0
+: 2  Observer vs. Pedestrian     0     0
+: 3 Passenger vs. Pedestrian     0     0
+
+
 
 * Child vs adult
 ** Create subset that excludes sanity check failures
@@ -98,7 +140,10 @@ sidewalk.data$gender <- factor(sidewalk.data$gender,
 
 # create subsets that only include those that passed sanity
 child.sub <- subset(child.data, child.data$passedSanCheck == "True")
+child.sub <- subset(child.sub, !(child.sub$perceivedCar == "Mensch" & child.sub$motorist == "self-driving"))
+
 child.sub$participant.ID <- factor(child.sub$participant.ID)
+
 
  #+END_SRC
 ** Run the GLMM
