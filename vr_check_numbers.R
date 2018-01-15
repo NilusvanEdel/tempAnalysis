@@ -16,9 +16,9 @@ child.data$motorist <- factor(child.data$motorist,
 child.data$gender <- factor(child.data$gender,
                             levels = c("False", "True"),
                             labels = c("female", "male"))
-# create subsets that only include those that passed sanity
+# create subsets that only include those that passed sanity and identified driver
 child.sub <- subset(child.data, child.data$passedSanCheck == "True")
-child.sub$participant.ID <- factor(child.sub$participant.ID)
+child.sub <- subset(child.sub, !(child.sub$perceivedCar == "Mensch" & child.sub$motorist == "self-driving"))
 # create contingency table
 contingency.xtab <- xtabs(~perspective + motorist + gender, data = child.sub)/2
 print(contingency.xtab)
