@@ -157,7 +157,8 @@ set.seed(123)
 #+BEGIN_SRC R :session *R* :results none
 
 # read the online_acceptibility data file
-data <- read.csv("online_accept_data/OnlineAccept.csv")
+data <- read.csv("online_accept_data/shortenedOnlineCSV.csv")
+data <- droplevels(data)
 
 setnames(data, "Subject_Id", "participant")
 setnames(data, "PERSP", "perspective")
@@ -191,6 +192,7 @@ party.
 set.seed(123)
 
 manip_check.sub <- subset(data, ((ratio == "1v1") & (scenario == "road")))
+manip_check.sub <- droplevels(manip_check.sub)
 
 manip_check.sub$perspective <- combineLevels(manip_check.sub$
                                              perspective, levs = c("pedestrian_fwd", "pedestrian_side"), newLabel = c("pedestrian"))
@@ -210,7 +212,7 @@ manip_check.chisq
 : 	replicates)
 :
 : data:  manip_check.xtab
-: X-squared = 25.228, df = NA, p-value = 0.0004998
+: X-squared = 34.446, df = NA, p-value = 0.0004998
 
 Follow up with post-hoc comparisons:
 #+BEGIN_SRC R :session *R* :results output :exports both
@@ -221,9 +223,9 @@ manip_check.post
 #+RESULTS:
 : Adjusted p-values used the fdr method.
 :                comparison  raw.p  adj.p
-: 1        car vs. observer 0.1185 0.1185
+: 1        car vs. observer 0.0973 0.0973
 : 2      car vs. pedestrian 0.0000 0.0000
-: 3 observer vs. pedestrian 0.0044 0.0067
+: 3 observer vs. pedestrian 0.0003 0.0004
 
 * Occupant-pedestrian dilemmas
 ** Create the subset
@@ -233,11 +235,10 @@ manip_check.post
 carped.sub <- subset(data, scenario == "carsac")
 carped.sub$ratio_f <- ordered(carped.sub$ratio)
 carped.sub$ratio_c <- scale(as.numeric(carped.sub$ratio))
-
+carped.sub <- droplevels(carped.sub)
 
 carped.sub$perspective <- combineLevels(carped.sub$perspective,
-                                        levs = c("pedestrian_fwd",
-                                                 "pedestrian_side"),
+                                        levs = c("pedestrian_fwd"),
                                         newLabel = c("pedestrian"))
 
 #+END_SRC
@@ -374,7 +375,7 @@ motorist <- rep(c("self-driving", "human"), each = 12)
 carped_plot.data <- data.frame(ratio, perspective, motorist)
 carped_plot.data$ratio_c <- scale(carped_plot.data$ratio)
 
-carped_plot.data$response <- predict(carped_glmm$full_model,
+carped_plot.data$response <- predict(carped_num.glmm,
                                      newdata = carped_plot.data,
                                      re.form = NA,
                                      type = "response")
@@ -404,3 +405,84 @@ carped.plot
 
 #+RESULTS:
 [[file:carped_plot.png]]
+* Pedestrian-pedestrian dilemmas
+** Create the subset
+#+BEGIN_SRC R :session *R* :results none
+
+# create subset for ped-ped dilemmas
+pedped.sub <- subset(data, (scenario == "road" | scenario == "sidewalk"))
+pedped.sub$ratio_f <- ordered(pedped.sub$ratio)
+pedped.sub$ratio_c <- scale(as.numeric(pedped.sub$ratio))
+pedped.sub <- droplevels(pedped.sub)
+
+#+END_SRC
+
+** Create models and compare fit
+#+BEGIN_SRC R :session *R* :results none
+set.seed(123)
+pedped_num.glmm <- glmer(response ~ ratio_c * perspective * motorist +
+                             ratio_c * scenario * motorist +
+                             (ratio_c + scenario + 1| participant),
+                         family = binomial,
+                     data = pedped.sub,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+#+END_SRC
+** Create ANOVA table using parametric bootstrapping
+** Follow-up tests
+** Plot
+*** Create predicted data
+#+BEGIN_SRC R :session *R* :results none
+
+label_names <- c("self-driving" = "Self-driving car",
+                 "human" = "Human driver",
+                 "sidewalk" = "Sidewalk",
+                 "road" = "Road",
+                 "pedestrian_fwd" = "Pedestrian (F)",
+                 "pedestrian_side" = "Pedestrian (S)",
+                 "car" = "Car occupant",
+                 "observer" = "Bird's-eye view")
+
+# create predicted data for plotting
+ratio <- rep(c(1, 2, 3, 4), 16)
+perspective <- rep(c("car", "observer", "pedestrian_fwd", "pedestrian_side", "car", "observer", "pedestrian_fwd", "pedestrian_side"), each = 8)
+motorist <- rep(c("self-driving", "human"), each = 32)
+
+scenario <- rep(rep(c("road", "sidewalk"), each = 4), 8)
+
+pedped_plot.data <- data.frame(ratio, perspective, motorist, scenario)
+
+pedped_plot.data$ratio_c <- scale(pedped_plot.data$ratio)
+
+pedped_plot.data$response <- predict(pedped_num.glmm,
+                                     newdata = pedped_plot.data,
+                                     re.form = NA,
+                                     type = "response")
+
+#+END_SRC
+*** Plot predicted data
+#+BEGIN_SRC R :session *R* :exports both :results graphics :file pedped_plot.png
+pedped.plot <- ggplot(pedped_plot.data,
+                      aes(ratio, as.numeric(response), color = perspective)) +
+    facet_grid( scenario ~ motorist,
+               labeller = as_labeller(label_names)) +
+    geom_line(aes(group = perspective)) +
+    theme_cowplot(font_size = 10) + geom_point() +
+    scale_x_continuous(name = "Lives-risked ratio", limits = c(1, 4)) +
+    scale_y_continuous(name = "P(Choosing swerve as more acceptable)",
+                       limits = c(0, 1)) + coord_equal(ratio = 3) +
+    scale_color_manual(name = "Perspective",
+                       labels = c("Car occupant",
+                                  "Bird's-eye view",
+                                  "Pedestrian (F)",
+                                  "Pedestrian (S)"),
+                       values = c("red",
+                                  "skyblue",
+                                  "orange",
+                                  "darkorange3" ) )
+pedped.plot
+#+END_SRC
+
+#+RESULTS:
+[[file:pedped_plot.png]]
