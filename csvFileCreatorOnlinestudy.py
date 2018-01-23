@@ -94,6 +94,7 @@ while i < len(fullCSV):
 # add the questionnaire answers to each row and delete them
 ques_results = []
 ind_2 = 0
+
 while ind_2 < len(fullCSV):
     if ("questionnaire_h" in fullCSV[ind_2][2] or "quesionnaire_av" in fullCSV[ind_2][2]) and (not any(fullCSV[ind_2][5:8])):
         ques_results = fullCSV[ind_2][9:16]
@@ -103,6 +104,7 @@ while ind_2 < len(fullCSV):
                 fullCSV[i][9:16] = ques_results
         fullCSV.pop(ind_2)
     ind_2 += 1
+
 #delete task_names
 for row in fullCSV:
     del row[2]
