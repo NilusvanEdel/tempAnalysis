@@ -16,10 +16,12 @@ os.chdir(path)
 fileList = []
 combinedCSV = []
 counter = 0
+numDatapoints = 0
 ### get each file in path with ending csv
 for file in glob.glob("*.csv"):
     if file == 'Post Questionnaire.csv':
         continue
+    numDatapoints += 1
     with open(path +'/'+ file) as csvfile:
         reader = csv.reader(csvfile, delimiter = ',')
         for row in reader:
@@ -33,6 +35,7 @@ for file in glob.glob("*.csv"):
                 continue
             row[0] = file.split(".")[0]
             combinedCSV.append(row)
+print("Number of datapoints: ", numDatapoints)
 
 ### writeCombined CSV file
 with open(folder+'combinedCSV.csv', 'w+') as myfile:
@@ -155,3 +158,4 @@ with open(folder+'selfSacCSV.csv', 'w+') as myfile:
         wr.writerow(selfSacCSV[i])
 noSimIDFail = list(dict.fromkeys(noSimIDFail))
 print("Failures of combining online with VR data: ", len(list(dict.fromkeys(noSimIDFail))))
+print(noSimIDFail)
