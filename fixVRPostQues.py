@@ -23,6 +23,9 @@ def fixVRPostQues():
             temp = row[1].replace(no_as_string, "")
             if int(no_as_string) < 10:
                 row[1] = temp + '0' + str(int(no_as_string))
+            else:
+                row[1] = temp + no_as_string
+            if row[1] == '01':
                 row[1] = "FIX01"
             newFile.append(row)
     with open(path + '/' + file, 'w+') as csvfile:
@@ -30,7 +33,8 @@ def fixVRPostQues():
         for row in newFile:
             wr.writerow(row)
 
-    print("fixedVRPosQues")
+
+print("fixedVRPosQues")
 
 
 def getMissingIDsFromPosQues():
