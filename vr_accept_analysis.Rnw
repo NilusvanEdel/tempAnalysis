@@ -43,17 +43,19 @@ We'll use `\Sexpr{our_seed}' as our seed. Next we need to load the
 libraries.
 
 <<load-libraries>>=
-library(lme4)
-library(afex)
-library(cowplot)
-library(DHARMa)
-library(xtable)
-library(rockchalk)
-library(tikzDevice)
-library(parallel)
-library(fifer)
-library(multcomp)
-library(vcdExtra)
+require(knitr)
+require(lme4)
+require(afex)
+require(cowplot)
+require(DHARMa)
+require(xtable)
+require(rockchalk)
+require(tikzDevice)
+require(parallel)
+require(fifer)
+require(multcomp)
+require(vcdExtra)
+
 @
 
 \section{Reading the files}
@@ -199,11 +201,6 @@ child.mosaic <- mosaic(child.xtabs,
                        gp = gpar(fill = c("light gray", "dark gray")))
 @
 
-
-
-
-
-
 \subsection{The model}
 \label{sec:child-model}
 
@@ -217,9 +214,9 @@ child_glmm <- mixed(decision ~ perspective + motorist +
                         perspective:motorist +
                         trial + gender + #age +
                         (1 | participant.ID),
-                    method = "LRT", # change to PB for final
+                    method = "PB", # change to PB for final
                     family = "binomial", data = child.sub,
-                    args_test = list(nsim = 100, cl = cl), cl = cl,
+                    args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
                                            optCtrl = list(maxfun = 2e5)))
 stopCluster(cl)
@@ -241,7 +238,9 @@ If they look okay, we follow up any significant differences.
 \subsection{Plotting}
 \label{sec:child-plot}
 
-Plotting the estimated marginal means:
+
+Depending on which effects or interactions we find, we probably want to change this plot. It currently just plots the Estimated Marginal Means for the 2-way interaction.
+
 <<child-emm-plot>>=
 child_emm_plot <- emmip(child_glmm, perspective ~ trial | motorist, type = "response") +
     theme_cowplot(font_size = 10) +
@@ -318,9 +317,9 @@ carsac_glmm <- mixed(decision ~ perspective + motorist +
                         perspective:motorist +
                         trial + gender + #age +
                         (1 | participant.ID),
-                    method = "LRT", # change to PB for final
+                    method = "PB", # change to PB for final
                     family = "binomial", data = carsac.sub,
-                    args_test = list(nsim = 100, cl = cl), cl = cl,
+                    args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
                                            optCtrl = list(maxfun = 2e5)))
 stopCluster(cl)
@@ -339,6 +338,8 @@ carsac_glmm_resid.plot <- plotSimulatedResiduals(
 \subsection{Plotting}
 \label{sec:carped-plot}
 
+
+Depending on which effects or interactions we find, we probably want to change this plot. It currently just plots the Estimated Marginal Means for the 2-way interaction.
 
 <<carped-plot>>=
 carsac.plot <- emmip(carsac_glmm, perspective ~ trial | motorist, type = "response") +
@@ -406,9 +407,9 @@ sidewalk_glmm <- mixed(decision == 'hitSidewalk' ~ perspective +
                         perspective:motorist +
                         trial + gender + #age +
                         (1 | participant.ID),
-                    method = "LRT", # change to PB for final
+                    method = "PB", # change to PB for final
                     family = "binomial", data = sidewalk.sub,
-                    args_test = list(nsim = 100, cl = cl), cl = cl,
+                    args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
                                            optCtrl = list(maxfun = 2e5)))
 stopCluster(cl)
@@ -426,6 +427,8 @@ sidewalk_glmm_resid.plot <- plotSimulatedResiduals(
 
 \subsection{Plotting}
 \label{sec:sidewalk-plot}
+
+Depending on which effects or interactions we find, we probably want to change this plot. It currently just plots the Estimated Marginal Means for the 2-way interaction.
 
 <<sidewalk-plot>>=
 sidewalk.plot <- emmip(sidewalk_glmm, perspective ~ trial | motorist,
