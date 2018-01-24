@@ -52,6 +52,8 @@ library(rockchalk)
 library(tikzDevice)
 library(parallel)
 library(fifer)
+library(multcomp)
+library(vcdExtra)
 @
 
 \section{Reading the files}
@@ -187,6 +189,21 @@ print(xtable(manip_check.post))
 \section{Child vs adult dilemmas}
 \label{sec:child}
 
+\subsection{Visualising the raw responses}
+\label{sec:child-raw}
+
+First we look at the raw proportions of the responses.
+<<child-mosaic>>=
+child.xtabs <- xtabs(~ motorist + perspective + decision, data = child.sub)
+child.mosaic <- mosaic(child.xtabs,
+                       gp = gpar(fill = c("light gray", "dark gray")))
+@
+
+
+
+
+
+
 \subsection{The model}
 \label{sec:child-model}
 
@@ -198,7 +215,7 @@ cl <- makeCluster(rep("localhost", nc))
 
 child_glmm <- mixed(decision ~ perspective + motorist +
                         perspective:motorist +
-                        trial +
+                        trial + gender + #age +
                         (1 | participant.ID),
                     method = "LRT", # change to PB for final
                     family = "binomial", data = child.sub,
@@ -224,31 +241,11 @@ If they look okay, we follow up any significant differences.
 \subsection{Plotting}
 \label{sec:child-plot}
 
-We start by creating a set of predicted data to plot.
-<<child-pred>>=
-trial <- rep(c("smallGroups", "largeGroups"), 8)
-perspective <- rep(c("Observer", "Passenger", "PedLarge", "PedSmall"), each = 2)
-motorist <- rep(c("human", "self-driving"), each = 8)
-child_plot.data <- data.frame(trial, perspective, motorist)
-
-child_plot.data$decision <- predict(child_glmm$full_model,
-                                     newdata = child_plot.data,
-                                     re.form = NA,
-                                     type = "response")
-
-@
-
-Then we create the plot.
-<<child-plot>>=
-child.plot <- ggplot(child_plot.data,
-                      aes(trial,
-                          as.numeric(decision),
-                          color = perspective)) +
-    geom_point() +
-    geom_line(aes(group = perspective)) +
-    facet_grid(. ~ motorist) +
-    theme_cowplot(font_size = 10) + geom_point() +
-    scale_y_continuous(name = "P(Choosing `hit children' as more acceptable)",
+Plotting the estimated marginal means:
+<<child-emm-plot>>=
+child_emm_plot <- emmip(child_glmm, perspective ~ trial | motorist, type = "response") +
+    theme_cowplot(font_size = 10) +
+    scale_y_continuous(name = "P(Choosing `crash car' as more acceptable)",
                        limits = c(0, 1)) + coord_equal(ratio = 3) +
     scale_color_manual(name = "Perspective",
                        labels = c("Bystander",
@@ -256,11 +253,12 @@ child.plot <- ggplot(child_plot.data,
                                   "Pedestrian wAdults",
                                   "Pedestrian wChildren"),
                        values = c("red3", "skyblue", "orange1", "purple"))
-child.plot
+child_emm_plot
 
 @
 
 \subsection{Follow-up comparisons}
+For a good example, see https://osf.io/q2a3b/
 \label{sec:child-followup}
 
 If we find an interaction between perspective and motorist-type we
@@ -268,8 +266,8 @@ should follow that up with comparisons of perspective within each
 level of motorist.
 
 <<child-int,results='asis'>>=
-emm_child_i <- emmeans(child_glmm, pairwise ~ perspective | motorist,
-                       type = "response")
+emm_child_i <- emmeans(child_glmm, ~ perspective | motorist, type = "response",
+                       contr = "pairwise")
 xtable(emm_child_i$contrasts)
 @
 
@@ -304,6 +302,12 @@ carsac.sub$perspective <- combineLevels(carsac.sub$perspective,
 
 @
 
+<<carsac-mosaic>>=
+carsac.xtabs <- xtabs(~ motorist + perspective + decision, data = carsac.sub)
+carsac.mosaic <- mosaic(carsac.xtabs,
+                       gp = gpar(fill = c("light gray", "dark gray")))
+@
+
 \subsection{The model}
 \label{sec:carped-glmm}
 <<carped-glmm,results='asis'>>=
@@ -312,7 +316,7 @@ cl <- makeCluster(rep("localhost", nc))
 
 carsac_glmm <- mixed(decision ~ perspective + motorist +
                         perspective:motorist +
-                        trial +
+                        trial + gender + #age +
                         (1 | participant.ID),
                     method = "LRT", # change to PB for final
                     family = "binomial", data = carsac.sub,
@@ -335,27 +339,10 @@ carsac_glmm_resid.plot <- plotSimulatedResiduals(
 \subsection{Plotting}
 \label{sec:carped-plot}
 
-<<carped-pred>>=
-trial <- rep(c("cityR", "mountain"), 6)
-perspective <- rep(c("Observer", "Passenger", "Pedestrian"), each = 2)
-motorist <- rep(c("human", "self-driving"), each = 6)
-carsac_plot.data <- data.frame(trial, perspective, motorist)
-
-carsac_plot.data$decision <- predict(carsac_glmm$full_model,
-                                     newdata = carsac_plot.data,
-                                     re.form = NA,
-                                     type = "response")
-@
 
 <<carped-plot>>=
-carsac.plot <- ggplot(carsac_plot.data,
-                      aes(trial,
-                          as.numeric(decision),
-                          color = perspective)) +
-    geom_point() +
-    geom_line(aes(group = perspective)) +
-    facet_grid(. ~ motorist) +
-    theme_cowplot(font_size = 10) + geom_point() +
+carsac.plot <- emmip(carsac_glmm, perspective ~ trial | motorist, type = "response") +
+    theme_cowplot(font_size = 10) +
     scale_y_continuous(name = "P(Choosing `crash car' as more acceptable)",
                        limits = c(0, 1)) + coord_equal(ratio = 3) +
     scale_color_manual(name = "Perspective",
@@ -402,12 +389,10 @@ xtable(emm_carsac_motorist$contrasts)
 \section{Sidewalk vs road dilemma}
 \label{sec:sidewalk}
 
-We collapse both pedestrian perspectives for this dilemma.
-<<sidewalk-clean>>=
-sidewalk.sub$perspective <- combineLevels(sidewalk.sub$perspective,
-                                        levs=c("PedLarge", "PedSmall"),
-                                        newLabel = "Pedestrian")
-
+<<sidewalk-mosaic>>=
+sidewalk.xtabs <- xtabs(~ motorist + perspective + decision, data = sidewalk.sub)
+sidewalk.mosaic <- mosaic(sidewalk.xtabs,
+                       gp = gpar(fill = c("light gray", "dark gray")))
 @
 
 \subsection{The model}
@@ -419,7 +404,7 @@ cl <- makeCluster(rep("localhost", nc))
 sidewalk_glmm <- mixed(decision == 'hitSidewalk' ~ perspective +
                         motorist +
                         perspective:motorist +
-                        trial +
+                        trial + gender + #age +
                         (1 | participant.ID),
                     method = "LRT", # change to PB for final
                     family = "binomial", data = sidewalk.sub,
@@ -442,36 +427,20 @@ sidewalk_glmm_resid.plot <- plotSimulatedResiduals(
 \subsection{Plotting}
 \label{sec:sidewalk-plot}
 
-<<sidewalk-pred>>=
-trial <- rep(c("smallGroups", "largeGroups"), 6)
-perspective <- rep(c("Observer", "Passenger", "Pedestrian"), each = 2)
-motorist <- rep(c("human", "self-driving"), each = 6)
-sidewalk_plot.data <- data.frame(trial, perspective, motorist)
-
-sidewalk_plot.data$decision <- predict(sidewalk_glmm$full_model,
-                                     newdata = sidewalk_plot.data,
-                                     re.form = NA,
-                                     type = "response")
-@
-
 <<sidewalk-plot>>=
-sidewalk.plot <- ggplot(sidewalk_plot.data,
-                      aes(trial,
-                          as.numeric(decision),
-                          color = perspective)) +
-    geom_point() +
-    geom_line(aes(group = perspective)) +
-    facet_grid(. ~ motorist) +
-    theme_cowplot(font_size = 10) + geom_point() +
+sidewalk.plot <- emmip(sidewalk_glmm, perspective ~ trial | motorist,
+                       type = "response") +
+    theme_cowplot(font_size = 10) +
     scale_y_continuous(
         name = "P(Choosing `swerve to sidewalk' as more acceptable)",
                        limits = c(0, 1)) + coord_equal(ratio = 3) +
     scale_color_manual(name = "Perspective",
                        labels = c("Bystander",
                                   "Passenger",
-                                  "Pedestrian"),
+                                  "Pedestrian on road",
+                                  "Pedestrian on sidewalk"),
                        values = c("red3", "skyblue",
-                                  "orange1" , "purple"))
+                                  "orange1", "purple"))
 
 sidewalk.plot
 @
