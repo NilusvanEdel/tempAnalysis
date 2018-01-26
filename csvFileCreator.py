@@ -52,7 +52,9 @@ with open(path + '/' + 'Post Questionnaire.csv') as csvfile:
 
 ### write first line
 childCSV, sidewalkCSV, selfSacCSV = [], [], []
-firstLine = ['participant-ID', 'male','av/Car', 'perspective', 'passedSanCheck', 'perceivedCar', 'perceivedIden', 'confidence', 'trial', 'decision']
+firstLine = ['participant-ID', 'male','av/Car', 'perspective', 'passedSanCheck', 'perceivedCar', 
+            'perceivedIden', 'age', 'drivExperience', 'education', 'recAccidents', 'heardBoutAV', 'opinAV',
+            'prevVRExp', 'visImpairment', 'confidence', 'trial', 'decision']
 childCSV.append(firstLine)
 sidewalkCSV.append(firstLine)
 selfSacCSV.append(firstLine)
@@ -63,6 +65,7 @@ with open(folder +'/'+ 'combinedCSV.csv') as csvfile:
     oldID = 0
     noSimIDFail = []
     for dataSplit in reader:
+        ### ignore first line
         if counter == 0:
             counter += 1
             continue
@@ -88,13 +91,32 @@ with open(folder +'/'+ 'combinedCSV.csv') as csvfile:
         else:
             newLine.append('PedLarge')
         newLine.append(sanityCheckPassed)
+        ### get the respective items out of PostQues
         try:
             if oldID == '1':
                 ind = postQues[findItem(postQues, "FIX01")]
             else:
                 ind = postQues[findItem(postQues, oldID)]
+            # motorist
             newLine.append(ind[11])
+            # perceived identity
             newLine.append(ind[12])
+            # age
+            newLine.append(ind[2])
+            # driving experience
+            newLine.append(ind[3])
+            # education
+            newLine.append(ind[4])
+            # recent accidents
+            newLine.append(ind[6])
+            # heard about AVs before?
+            newLine.append(ind[7])
+            # opinion on AVs
+            newLine.append(ind[8])
+            # previous VR experience
+            newLine.append(ind[9])
+            # glasses?
+            newLine.append(ind[10])
         except IndexError:
             noSimIDFail.append(oldID)
             for i in range(2): newLine.append("NoSimilarID")
