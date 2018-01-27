@@ -199,6 +199,15 @@ First we look at the raw proportions of the responses.
 child.xtabs <- xtabs(~ motorist + perspective + decision, data = child.sub)
 child.mosaic <- mosaic(child.xtabs,
                        gp = gpar(fill = c("light gray", "dark gray")))
+
+
+
+child.sub$confidence_signed <- ifelse(child.sub$decision == "hitChildren", -1*child.sub$confidence,child.sub$confidence)
+child_raw.plot <- ggplot(child.sub, aes(perspective)) + geom_bar(aes(y = ..prop.., group = decision:motorist, fill = decision)) + scale_y_continuous(sec.axis = sec_axis(~.*200-100, name = "confidence")) + stat_summary(aes(y=confidence_signed/200+0.5, shape = decision), data = child.sub) + geom_hline(yintercept = 0.5, linetype = "dashed") + scale_shape_manual(values = c(60,62)) + coord_flip()
+
+
+
+
 @
 
 \subsection{The model}
@@ -210,16 +219,34 @@ We run a logit mixed model to predict the decision of the participants.
 (nc <- detectCores())
 cl <- makeCluster(rep("localhost", nc))
 
-child_glmm <- mixed(decision ~ perspective + motorist +
-                        perspective:motorist +
-                        trial + gender + #age +
+child.sub$age_c <- scale(child.sub$age)
+confidence <- round_any(child.sub$confidence, 10) / 10
+
+child.sub$confidenceW <- ifelse(child.sub$confidence > 0, round_any(child.sub$confidence, 10, f = ceiling), 10)
+
+child_glmm <- mixed(decision ~ perspective * motorist +
+                        trial + gender +
+                        opinAV + education +
+                        drivExperience + perceivedIden + age_c +
                         (1 | participant.ID),
-                    method = "PB", # change to PB for final
+                    method = "LRT", # change to PB for final
                     family = "binomial", data = child.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
                                            optCtrl = list(maxfun = 2e5)))
+
+
+child_lmm_conf <- mixed(confidence ~ perspective * motorist * decision +
+                        trial + gender +
+                        opinAV + education +
+                        drivExperience + perceivedIden + age_c +
+                        (1 | participant.ID),
+                    method = "KR", # change to PB for final
+                    data = child.sub,
+                    args_test = list(nsim = 1000, cl = cl), cl = cl)
+
 stopCluster(cl)
+
 child_glmm_anova <- child_glmm$anova_table
 print(xtable(child_glmm_anova))
 @
@@ -229,8 +256,21 @@ We then check the residuals of the model.
 child_glmm.resid <- simulateResiduals(
     fittedModel = child_glmm$full_model,
     n = 2000)
+
 child_glmm_resid.plot <- plotSimulatedResiduals(
     simulationOutput = child_glmm.resid)
+
+testUniformity(child_glmm.resid)
+
+child_conf_lmm.resid <- simulateResiduals(
+    fittedModel = child_lmm_conf$full_model,
+    n = 2000)
+
+child_lmm_conf.plot <- plotSimulatedResiduals(
+    simulationOutput = child_conf_lmm.resid)
+
+testUniformity(child_conf_lmm.resid)
+
 @
 
 If they look okay, we follow up any significant differences.
@@ -244,7 +284,7 @@ Depending on which effects or interactions we find, we probably want to change t
 <<child-emm-plot>>=
 child_emm_plot <- emmip(child_glmm, perspective ~ trial | motorist, type = "response") +
     theme_cowplot(font_size = 10) +
-    scale_y_continuous(name = "P(Choosing `crash car' as more acceptable)",
+    scale_y_continuous(name = "P(Choosing `hit children' as more acceptable)",
                        limits = c(0, 1)) + coord_equal(ratio = 3) +
     scale_color_manual(name = "Perspective",
                        labels = c("Bystander",
@@ -313,15 +353,26 @@ carsac.mosaic <- mosaic(carsac.xtabs,
 (nc <- detectCores())
 cl <- makeCluster(rep("localhost", nc))
 
+carsac.sub$age_c <- scale(carsac.sub$age)
+
 carsac_glmm <- mixed(decision ~ perspective + motorist +
                         perspective:motorist +
-                        trial + gender + #age +
+                        trial + gender + age_c + opinAV +
+                        education +  drivExperience + visImpairment +
+                        perceivedIden +
                         (1 | participant.ID),
-                    method = "PB", # change to PB for final
+                    method = "LRT", # change to PB for final
                     family = "binomial", data = carsac.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
                                            optCtrl = list(maxfun = 2e5)))
+
+carsac_conf_lmm <- mixed(confidence ~ perspective * motorist * decision +
+                        (1 | participant.ID),
+                    method = "KR", # change to PB for final
+                    data = carsac.sub,
+                    args_test = list(nsim = 1000, cl = cl), cl = cl)
+
 stopCluster(cl)
 xtable(carsac_glmm$anova_table)
 @
@@ -333,6 +384,17 @@ carsac_glmm.resid <- simulateResiduals(
     fittedModel = carsac_glmm$full_model, n = 2000)
 carsac_glmm_resid.plot <- plotSimulatedResiduals(
     simulationOutput = carsac_glmm.resid)
+
+testUniformity(carsac_glmm.resid)
+
+
+carsac_lmm.resid <- simulateResiduals(
+    carsac_conf_lmm$full_model, n = 2000)
+carsac_lmm_resid.plot <- plotSimulatedResiduals(
+    carsac_lmm.resid)
+
+testUniformity(carsac_lmm.resid)
+
 @
 
 \subsection{Plotting}
