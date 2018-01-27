@@ -1,0 +1,18 @@
+HZM07 (female - human - passenger)
+
+KPR03 (female - av - passenger)
+
+IRD09 (female - av - pedLarge)
+
+UDO10 (female - human - pedLarge)
+ESW04 (female - human - pedLarge)
+KSW06 (female - human - pedLarge)
+
+
+RGH10 (male -av -passenger)
+
+GFB02 (male - human - pedSmall)
+
+GFK09 (male - human -pedLarge)
+
+KNB10 (male - av - pedLarge)
