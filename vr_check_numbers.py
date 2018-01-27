@@ -119,8 +119,8 @@ def addSecondSanCheck():
     os.chdir(path)
     csvFiles = glob.glob("*.csv")
     failList, sanList = checkVRNumbers(printIt = False)
-    csvList = []
     for csvF in csvFiles:
+        csvList = []
         with open(csvF) as csvfile:
             reader = csv.reader(csvfile, delimiter=',')
             firstLine = True
