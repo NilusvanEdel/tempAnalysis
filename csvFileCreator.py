@@ -2,6 +2,9 @@ import csv
 import glob
 import os
 
+from fixVRPostQues import fixVRPostQues
+from vr_check_numbers import doSecondSanCheck, checkVRNumbers
+
 ### where the dataFiles are stored
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'vr_data/raw'))
 ### where the created Files will be stored
@@ -10,7 +13,7 @@ folder = os.path.abspath(os.path.join(os.path.dirname(__file__), 'vr_data/')) + 
 def findItem(theList, item):
    return [ind for ind in range(len(theList)) if item in theList[ind]][0]
 
-from fixVRPostQues import fixVRPostQues
+
 fixVRPostQues()
 os.chdir(path)
 fileList = []
@@ -22,7 +25,7 @@ for file in glob.glob("*.csv"):
     if file == 'Post Questionnaire.csv':
         continue
     numDatapoints += 1
-    with open(path +'/'+ file) as csvfile:
+    with open(path + '/' + file) as csvfile:
         reader = csv.reader(csvfile, delimiter = ',')
         for row in reader:
             if counter == 0:
@@ -162,6 +165,10 @@ with open(folder +'/'+ 'combinedCSV.csv') as csvfile:
             else:
                 newLineSelfSac.append('selfSacrifice')
             selfSacCSV.append(newLineSelfSac)
+
+### do second sanity Check and delete the failed ones out of the combined csv
+doSecondSanCheck()
+checkVRNumbers()
 
 ### writeChildren CSV file
 with open(folder+'childrenCSV.csv', 'w+') as myfile:
