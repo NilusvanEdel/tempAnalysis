@@ -36,6 +36,7 @@ def checkVRNumbers(printIt):
     counterMalSmaAV = 0
     oldID = ""
     failedSecondSanCheck = []
+    succesfulSecondSanCheck = []
 
     with open(file) as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
@@ -54,6 +55,7 @@ def checkVRNumbers(printIt):
                 if row[2] == "True" and row[5] == "Mensch":
                     failedSecondSanCheck.append(row[0])
                     continue
+                succesfulSecondSanCheck.append(row[0])
 
                 pers = row[3]
                 if row[1] == 'True':
@@ -110,31 +112,35 @@ def checkVRNumbers(printIt):
         print('{:.7} {:.7} {:.7} {:.7} {:.7}'.format('     ', 'PedLarge', 'PedSmall', 'Observer', 'Passenger'))
         print('{:.7} {:<7} {:<7} {:<7} {:<7}'.format('Human', counterFemLar, counterFemSma, counterFemObs, counterFemPas))        
         print('{:.7} {:<7} {:<7} {:<7} {:<7}'.format('AV   ',counterFemLarAV, counterFemSmaAV, counterFemObsAV, counterFemPasAV))
-    return failedSecondSanCheck
+    return failedSecondSanCheck, succesfulSecondSanCheck
 
 
-def doSecondSanCheck():
-    file = path + "/combinedCSV.csv"
-    sanList = checkVRNumbers(printIt = False)
+def addSecondSanCheck():
+    os.chdir(path)
+    csvFiles = glob.glob("*.csv")
+    failList, sanList = checkVRNumbers(printIt = False)
     csvList = []
-    with open(file) as csvfile:
-        reader = csv.reader(csvfile, delimiter=',')
-        for row in reader:
-            csvList.append(row)
-    print(len(csvList))
-    for entry in sanList:
-        error = False
-        while not error:
-            try:
-                ind = findItem(csvList, entry)
-                csvList.pop(ind)
-            except IndexError:
-                error = True
-    with open(file, 'w+') as myfile:
-        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-        for i in range(len(csvList)):
-            wr.writerow(csvList[i])
+    for csvF in csvFiles:
+        with open(csvF) as csvfile:
+            reader = csv.reader(csvfile, delimiter=',')
+            firstLine = True
+            for row in reader:
+                if firstLine:
+                    firstLine = False
+                    row.append("SecondSanCheck")
+                    csvList.append(row)
+                    continue
+                if row[0] in failList:
+                    row.append("False")
+                else:
+                    row.append("True")
+                csvList.append(row)
+        with open(csvF, 'w+') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            for i in range(len(csvList)):
+                wr.writerow(csvList[i])
+
 
 if __name__ == '__main__':
     checkVRNumbers(printIt = True)
-    # doSecondSanCheck()
+    #addSecondSanCheck()

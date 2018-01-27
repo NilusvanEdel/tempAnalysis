@@ -3,7 +3,7 @@ import glob
 import os
 
 from fixVRPostQues import fixVRPostQues
-from vr_check_numbers import doSecondSanCheck, checkVRNumbers
+from vr_check_numbers import checkVRNumbers, addSecondSanCheck
 
 ### where the dataFiles are stored
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'vr_data/raw'))
@@ -166,20 +166,22 @@ with open(folder +'/'+ 'combinedCSV.csv') as csvfile:
                 newLineSelfSac.append('selfSacrifice')
             selfSacCSV.append(newLineSelfSac)
 
-with open(folder+'childrenCSV.csv', 'w+') as myfile:
+for i in range(2):
+    with open(folder+'childrenCSV.csv', 'w+') as myfile:
+            wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+            for i in range(len(childCSV)):
+                wr.writerow(childCSV[i])
+    ### write sidewalkCSV
+    with open(folder+'sidewalkCSV.csv', 'w+') as myfile:
         wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-        for i in range(len(childCSV)):
-            wr.writerow(childCSV[i])
-### write sidewalkCSV
-with open(folder+'sidewalkCSV.csv', 'w+') as myfile:
-    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-    for i in range(len(sidewalkCSV)):
-        wr.writerow(sidewalkCSV[i])
-### write selfSacCSV
-with open(folder+'selfSacCSV.csv', 'w+') as myfile:
-    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-    for i in range(len(selfSacCSV)):
-        wr.writerow(selfSacCSV[i])
+        for i in range(len(sidewalkCSV)):
+            wr.writerow(sidewalkCSV[i])
+    ### write selfSacCSV
+    with open(folder+'selfSacCSV.csv', 'w+') as myfile:
+        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+        for i in range(len(selfSacCSV)):
+            wr.writerow(selfSacCSV[i])
+    addSecondSanCheck()
 noSimIDFail = list(dict.fromkeys(noSimIDFail))
 print("Failures of combining online with VR data: ", len(list(dict.fromkeys(noSimIDFail))))
 print(noSimIDFail)
