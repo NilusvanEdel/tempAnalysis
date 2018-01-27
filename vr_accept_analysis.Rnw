@@ -64,7 +64,9 @@ We now read in the data files.
 
 <<read-data>>=
 child.data <- read.csv("vr_data/childrenCSV.csv")
+
 carsac.data <- read.csv("vr_data/selfSacCSV.csv")
+
 sidewalk.data <- read.csv("vr_data/sidewalkCSV.csv")
 @
 
@@ -85,15 +87,19 @@ child.data$motorist <- factor(child.data$motorist,
 # set participant to factor
 child.data$participant.ID <- factor(child.data$participant.ID)
 
+
+# set confidence to numeric
+
+child.data$confidence <- as.numeric(child.data$confidence)
+
 # rename levels for gender
 child.data$gender <- factor(child.data$gender,
                             levels = c("False", "True"),
                             labels = c("female", "male"))
 
 # remove sanity check and perception check failures
-child.sub <- subset(child.data, child.data$passedSanCheck == "True")
-child.sub <- subset(child.sub, !(child.sub$perceivedCar == "Mensch" &
-                                 child.sub$motorist == "self-driving"))
+child.sub <- subset(child.data, child.data$passedSanCheck == "True" & child.data$SecondSanCheck == "True")
+
 
 
 
@@ -117,11 +123,12 @@ carsac.data$gender <- factor(carsac.data$gender,
                             levels = c("False", "True"),
                             labels = c("female", "male"))
 
-carsac.sub <- subset(carsac.data, carsac.data$passedSanCheck == "True")
-carsac.sub <- subset(carsac.sub, !(carsac.sub$perceivedCar == "Mensch" &
-                                   carsac.sub$motorist == "self-driving"))
+# set confidence to numeric
+
+carsac.data$confidence <- as.numeric(carsac.data$confidence)
 
 
+carsac.sub <- subset(carsac.data, carsac.data$passedSanCheck == "True" & carsac.data$SecondSanCheck == "True")
 
 # sidewalk
 
@@ -145,10 +152,13 @@ sidewalk.data$gender <- factor(sidewalk.data$gender,
                             levels = c("False", "True"),
                             labels = c("female", "male"))
 
-# sanity check
-sidewalk.sub <- subset(sidewalk.data, sidewalk.data$passedSanCheck == "True")
-sidewalk.sub <- subset(sidewalk.sub, !(sidewalk.sub$perceivedCar == "Mensch" &
-                                       sidewalk.sub$motorist == "self-driving"))
+
+# set confidence to numeric
+sidewalk.data$confidence <- as.numeric(sidewalk.data$confidence)
+
+                                        # sanity check
+sidewalk.sub <- subset(sidewalk.data, sidewalk.data$passedSanCheck == "True" & SecondSanCheck == "True")
+
 @
 
 \section{Manipulation check}
@@ -196,24 +206,24 @@ print(xtable(manip_check.post))
 
 First we look at the raw proportions of the responses.
 <<child-mosaic>>=
-child.xtabs <- xtabs(~ motorist + perspective + decision, data = child.data)
+child.xtabs <- xtabs(~ motorist + perspective + decision, data = child.sub)
 
 child.cont <- data.frame(child.xtabs)
-child.cont$Freq <- ifelse(child.cont$decision == "hitAdults", -1*child.cont$Freq, child.cont$Freq)
 
-child.mosaic <- mosaic(child.xtabs,
-                       gp = gpar(fill = c("light gray", "dark gray")))
+child.cont$Freq <- ifelse(child.cont$decision == "hitAdults", -child.cont$Freq, child.cont$Freq)
+
+child.cont$Freq <- child.cont$Freq/46*100
 
 
-
-child.data$confidence_signed <- ifelse(child.data$decision == "hitChildren", 1*child.data$confidence,-1*child.data$confidence)
+child.sub$confidence_signed <- ifelse(child.sub$decision == "hitAdults", -child.sub$confidence, child.sub$confidence)
 
 
 child_raw.plot <- ggplot(child.cont, aes(perspective)) +
     geom_bar(stat = "identity", aes(y = Freq, group = decision:motorist, fill = decision)) + ylab("Proportion of decisions") +
-    scale_y_continuous(sec.axis = sec_axis(~., name = "Confidence in decision")) +
-    stat_summary(aes(y=confidence_signed, shape = decision), data = child.data) + geom_hline(yintercept = 0, linetype = "dashed") + scale_shape_manual(values = c(15,15)) + coord_flip() + facet_grid(motorist ~ .)
-
+    scale_y_continuous(limits = c(-100,100), sec.axis = sec_axis(~., name = "Confidence in decision")) +
+    stat_summary(aes(y = confidence_signed, shape = decision), data = child.sub) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    scale_shape_manual(values = c(15,15)) + coord_flip() + facet_grid(motorist ~ .)
 
 
 @
@@ -350,9 +360,25 @@ carsac.sub$perspective <- combineLevels(carsac.sub$perspective,
 @
 
 <<carsac-mosaic>>=
-carsac.xtabs <- xtabs(~ motorist + perspective + decision, data = carsac.sub)
-carsac.mosaic <- mosaic(carsac.xtabs,
-                       gp = gpar(fill = c("light gray", "dark gray")))
+
+carsac.xtab <- xtabs(~ motorist + perspective + decision, data = carsac.sub)
+
+carsac.cont <- data.frame(carsac.xtab)
+
+carsac.cont$Freq <- ifelse(carsac.cont$decision == "hitPedestrians", -carsac.cont$Freq, carsac.cont$Freq)
+
+carsac.cont$Freq <- carsac.cont$Freq/46*100
+
+carsac.sub$confidence_signed <- ifelse(carsac.sub$decision == "hitPedestrians", 1*carsac.sub$confidence,-1*carsac.sub$confidence)
+
+carsac_raw.plot <- ggplot(carsac.cont, aes(perspective)) +
+    geom_bar(stat = "identity", aes(y = Freq, group = decision:motorist, fill = decision)) + ylab("Proportion of decisions") +
+    scale_y_continuous(limits = (c(-100, 100)), sec.axis = sec_axis(~., name = "Confidence in decision")) +
+    stat_summary(aes(y = confidence_signed, shape = decision), data = carsac.sub) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    scale_shape_manual(values = c(15,15,15,15)) + coord_flip() + facet_grid(motorist ~ .)
+
+
 @
 
 \subsection{The model}
@@ -461,12 +487,26 @@ xtable(emm_carsac_motorist$contrasts)
 \label{sec:sidewalk}
 
 <<sidewalk-mosaic>>=
-sidewalk.xtabs <- xtabs(~ motorist + perspective + decision, data = sidewalk.sub)
-sidewalk.mosaic <- mosaic(sidewalk.xtabs,
-                       gp = gpar(fill = c("light gray", "dark gray")))
-@
 
-\subsection{The model}
+sidewalk.xtabs <- xtabs(~ motorist + perspective + decision, data = sidewalk.sub)
+
+sidewalk.cont <- data.frame(sidewalk.xtabs)
+
+sidewalk.cont$Freq <- ifelse(sidewalk.cont$decision == "hitAdults", -sidewalk.cont$Freq, sidewalk.cont$Freq)
+
+sidewalk.cont$Freq <- sidewalk.cont$Freq/46*100
+
+
+sidewalk.sub$confidence_signed <- ifelse(sidewalk.sub$decision == "hitAdults", -sidewalk.sub$confidence, sidewalk.sub$confidence)
+
+
+sidewalk_raw.plot <- ggplot(sidewalk.cont, aes(perspective)) +
+    geom_bar(stat = "identity", aes(y = Freq, group = decision:motorist, fill = decision)) + ylab("Proportion of decisions") +
+    scale_y_continuous(limits = c(-100,100), sec.axis = sec_axis(~., name = "Confidence in decision")) +
+    stat_summary(aes(y = confidence_signed, shape = decision), data = sidewalk.sub) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    scale_shape_manual(values = c(15,15)) + coord_flip() + facet_grid(motorist ~ .)
+
 \label{sec:sidewalk-glmm}
 <<sidewalk-glmm,results='asis'>>=
 (nc <- detectCores())
