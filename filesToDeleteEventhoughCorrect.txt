@@ -1,7 +1,5 @@
 HZM07 (female - human - passenger)
 
-KPR03 (female - av - passenger)
-
 IRD09 (female - av - pedLarge)
 
 UDO10 (female - human - pedLarge)

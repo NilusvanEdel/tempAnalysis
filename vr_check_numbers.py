@@ -11,7 +11,7 @@ def findItem(theList, item):
     return [ind for ind in range(len(theList)) if item in theList[ind]][0]
 
 
-def checkVRNumbers():
+def checkVRNumbers(printIt):
     # get each file in path with ending csv
     counter = 0
     counterMale = 0
@@ -39,7 +39,11 @@ def checkVRNumbers():
 
     with open(file) as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
+        firstLine = True
         for row in reader:
+            if firstLine:
+                firstLine = False
+                continue
             if oldID != row[0]:
                 oldID = row[0]
                 counter += 1
@@ -89,26 +93,26 @@ def checkVRNumbers():
                             counterFemLarAV += 1
                         else:
                             counterFemPasAV += 1
+    if printIt == True:
+        print("Overall: ", counter)
+        print("PassedSan: ", counterMale + counterFemale)
+        print("Male: ", counterMale)
+        print("Female: ", counterFemale)
+        print("--------------------Male--------------------")
+        print('{:.7} {:.7} {:.7} {:.7} {:.7}'.format('     ', 'PedLarge', 'PedSmall', 'Observer', 'Passenger'))
+        print('{:.7} {:<7} {:<7} {:<7} {:<7}'.format('Human', counterMalLar, counterMalSma, counterMalObs, counterMalPas))
+        print('{:.7} {:<7} {:<7} {:<7} {:<7}'.format('AV   ', counterMalLarAV, counterMalSmaAV, counterMalObsAV, counterMalPasAV))
 
-    print("Overall: ", counter)
-    print("PassedSan: ", counterMale + counterFemale)
-    print("Male: ", counterMale)
-    print("Female: ", counterFemale)
-    print("--------------------Male--------------------")
-    print('{:.7} {:.7} {:.7} {:.7} {:.7}'.format('     ', 'PedLarge', 'PedSmall', 'Observer', 'Passenger'))
-    print('{:.7} {:<7} {:<7} {:<7} {:<7}'.format('Human', counterMalLar, counterMalSma, counterMalObs, counterMalPas))
-    print('{:.7} {:<7} {:<7} {:<7} {:<7}'.format('AV   ', counterMalLarAV, counterMalSmaAV, counterMalObsAV, counterMalPasAV))
-
-    print("-------------------Female-------------------")
-    print('{:.7} {:.7} {:.7} {:.7} {:.7}'.format('     ', 'PedLarge', 'PedSmall', 'Observer', 'Passenger'))
-    print('{:.7} {:<7} {:<7} {:<7} {:<7}'.format('Human', counterFemLar, counterFemSma, counterFemObs, counterFemPas))        
-    print('{:.7} {:<7} {:<7} {:<7} {:<7}'.format('AV   ',counterFemLarAV, counterFemSmaAV, counterFemObsAV, counterFemPasAV))
+        print("-------------------Female-------------------")
+        print('{:.7} {:.7} {:.7} {:.7} {:.7}'.format('     ', 'PedLarge', 'PedSmall', 'Observer', 'Passenger'))
+        print('{:.7} {:<7} {:<7} {:<7} {:<7}'.format('Human', counterFemLar, counterFemSma, counterFemObs, counterFemPas))        
+        print('{:.7} {:<7} {:<7} {:<7} {:<7}'.format('AV   ',counterFemLarAV, counterFemSmaAV, counterFemObsAV, counterFemPasAV))
     return failedSecondSanCheck
 
 
 def doSecondSanCheck():
     file = path + "/combinedCSV.csv"
-    sanList = checkVRNumbers()
+    sanList = checkVRNumbers(printIt = False)
     csvList = []
     with open(file) as csvfile:
         reader = csv.reader(csvfile, delimiter=',')
@@ -123,12 +127,11 @@ def doSecondSanCheck():
                 csvList.pop(ind)
             except IndexError:
                 error = True
-    print(len(csvList))
     with open(file, 'w+') as myfile:
         wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
         for i in range(len(csvList)):
             wr.writerow(csvList[i])
 
 if __name__ == '__main__':
-    checkVRNumbers()
+    checkVRNumbers(printIt = True)
     # doSecondSanCheck()
