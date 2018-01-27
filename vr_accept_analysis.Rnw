@@ -196,15 +196,23 @@ print(xtable(manip_check.post))
 
 First we look at the raw proportions of the responses.
 <<child-mosaic>>=
-child.xtabs <- xtabs(~ motorist + perspective + decision, data = child.sub)
+child.xtabs <- xtabs(~ motorist + perspective + decision, data = child.data)
+
+child.cont <- data.frame(child.xtabs)
+child.cont$Freq <- ifelse(child.cont$decision == "hitAdults", -1*child.cont$Freq, child.cont$Freq)
+
 child.mosaic <- mosaic(child.xtabs,
                        gp = gpar(fill = c("light gray", "dark gray")))
 
 
 
-child.sub$confidence_signed <- ifelse(child.sub$decision == "hitChildren", -1*child.sub$confidence,child.sub$confidence)
-child_raw.plot <- ggplot(child.sub, aes(perspective)) + geom_bar(aes(y = ..prop.., group = decision:motorist, fill = decision)) + scale_y_continuous(sec.axis = sec_axis(~.*200-100, name = "confidence")) + stat_summary(aes(y=confidence_signed/200+0.5, shape = decision), data = child.sub) + geom_hline(yintercept = 0.5, linetype = "dashed") + scale_shape_manual(values = c(60,62)) + coord_flip()
+child.data$confidence_signed <- ifelse(child.data$decision == "hitChildren", 1*child.data$confidence,-1*child.data$confidence)
 
+
+child_raw.plot <- ggplot(child.cont, aes(perspective)) +
+    geom_bar(stat = "identity", aes(y = Freq, group = decision:motorist, fill = decision)) + ylab("Proportion of decisions") +
+    scale_y_continuous(sec.axis = sec_axis(~., name = "Confidence in decision")) +
+    stat_summary(aes(y=confidence_signed, shape = decision), data = child.data) + geom_hline(yintercept = 0, linetype = "dashed") + scale_shape_manual(values = c(15,15)) + coord_flip() + facet_grid(motorist ~ .)
 
 
 
