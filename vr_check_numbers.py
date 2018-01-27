@@ -127,7 +127,6 @@ def doSecondSanCheck():
                 csvList.pop(ind)
             except IndexError:
                 error = True
-    print(len(csvList))
     with open(file, 'w+') as myfile:
         wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
         for i in range(len(csvList)):
