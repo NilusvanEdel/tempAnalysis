@@ -47,6 +47,9 @@ def checkVRNumbers(printIt):
             if oldID != row[0]:
                 oldID = row[0]
                 counter += 1
+                # if sanCheck was failed
+                if row[4] == "False":
+                    continue
                 # right perceived Motorist?
                 if row[2] == "True" and row[5] == "Mensch":
                     failedSecondSanCheck.append(row[0])
@@ -95,7 +98,7 @@ def checkVRNumbers(printIt):
                             counterFemPasAV += 1
     if printIt == True:
         print("Overall: ", counter)
-        print("PassedSan: ", counterMale + counterFemale)
+        print("PassedSanChecks: ", counterMale + counterFemale)
         print("Male: ", counterMale)
         print("Female: ", counterFemale)
         print("--------------------Male--------------------")

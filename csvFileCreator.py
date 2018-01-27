@@ -166,25 +166,21 @@ with open(folder +'/'+ 'combinedCSV.csv') as csvfile:
                 newLineSelfSac.append('selfSacrifice')
             selfSacCSV.append(newLineSelfSac)
 
-for i in range(2):
-    ### writeChildren CSV file
-    with open(folder+'childrenCSV.csv', 'w+') as myfile:
+with open(folder+'childrenCSV.csv', 'w+') as myfile:
         wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
         for i in range(len(childCSV)):
             wr.writerow(childCSV[i])
-    ### write sidewalkCSV
-    with open(folder+'sidewalkCSV.csv', 'w+') as myfile:
-        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-        for i in range(len(sidewalkCSV)):
-            wr.writerow(sidewalkCSV[i])
-    ### write selfSacCSV
-    with open(folder+'selfSacCSV.csv', 'w+') as myfile:
-        wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-        for i in range(len(selfSacCSV)):
-            wr.writerow(selfSacCSV[i])
-    noSimIDFail = list(dict.fromkeys(noSimIDFail))
-    ### do second sanity Check and delete the failed ones out of the combined csv
-    doSecondSanCheck()
+### write sidewalkCSV
+with open(folder+'sidewalkCSV.csv', 'w+') as myfile:
+    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+    for i in range(len(sidewalkCSV)):
+        wr.writerow(sidewalkCSV[i])
+### write selfSacCSV
+with open(folder+'selfSacCSV.csv', 'w+') as myfile:
+    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+    for i in range(len(selfSacCSV)):
+        wr.writerow(selfSacCSV[i])
+noSimIDFail = list(dict.fromkeys(noSimIDFail))
 print("Failures of combining online with VR data: ", len(list(dict.fromkeys(noSimIDFail))))
 print(noSimIDFail)
 checkVRNumbers(printIt = True)
