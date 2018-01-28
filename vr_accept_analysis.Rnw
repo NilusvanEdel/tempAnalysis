@@ -66,7 +66,7 @@ child.data <- read.csv("vr_data/childrenCSV.csv")
 carsac.data <- read.csv("vr_data/selfSacCSV.csv")
 sidewalk.data <- read.csv("vr_data/sidewalkCSV.csv")
 
-theme_set(theme_cowplot(font_size=10))
+theme_set(theme_cowplot(font_size=11))
 @
 
 Some of the variables need cleaning, so we rename them.
@@ -91,6 +91,8 @@ child.data$gender <- factor(child.data$gender,
 # remove sanity check and perception check failures
 child.sub <- subset(child.data, child.data$passedSanCheck == "True" &
                                 child.data$SecondSanCheck == "True")
+
+
 # reorder perspective levels
 child.sub$perspective <- factor(child.sub$perspective, levels = c("Observer", "Passenger", "PedSmall", "PedLarge"))
 
@@ -136,8 +138,6 @@ sidewalk.sub <- subset(sidewalk.data,
                        SecondSanCheck == "True")
 
 
-# reverse the decision levels
-#sidewalk.sub$decision <- factor(sidewalk.sub$decision, levels = rev(levels(sidewalk.sub$decision)))
 
 sidewalk.sub$perspective <- factor(sidewalk.sub$perspective,
                                    levels = c("Observer",
@@ -195,6 +195,75 @@ First we look at the raw proportions of the responses.
 
 <<child-plot>>=
 
+child.sub$confidence_signed <- ifelse(child.sub$decision == "hitChildren",
+                                         -child.sub$confidence, child.sub$confidence)
+
+child_means <- do.call(data.frame, aggregate(
+    confidence_signed ~
+        motorist + perspective + decision,
+    data = child.sub, FUN=function(x) c(mean = mean(x), sd = sd(x))))
+
+child_means$decision <- paste("x_", child_means$decision, sep="")
+
+child.ctab <- ctab(child.sub$motorist, child.sub$perspective,
+                      child.sub$decision, percentages=TRUE, type = "row")
+
+child.cont <- as.data.frame(child.ctab$ctab)
+colnames(child.cont)[1] <- "motorist"
+colnames(child.cont)[2] <- "perspective"
+colnames(child.cont)[3] <- "decision"
+
+child.cont$confidence_signed <- child_means$confidence_signed.mean
+
+child.cont$confidence_sd <- child_means$confidence_signed.sd
+child.cont$decision2 <- child_means$decision
+
+child.cont$Freq <- ifelse(child.cont$decision == "hitChildren",
+                             -child.cont$Freq, child.cont$Freq)
+
+
+motorist_names <- c("self-driving" = "Self-driving car",
+                    "human" = "Human driver")
+
+
+child_raw.plot <- ggplot(child.cont, aes(x = perspective,
+                                         group = decision:perspective)) +
+    geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
+    ylab("Confidence") +
+     geom_linerange(aes(ymin = confidence_signed - confidence_sd,
+                       ymax = confidence_signed + confidence_sd),
+               data = child.cont) +
+    scale_x_discrete(name = "Perspective",
+                     limits = rev(levels(child.cont$perspective)),
+                     labels = c("Pedestrian\nwith adults", "Pedestrian\nwith child",
+                                "Passenger", "Bystander")) +
+        scale_y_continuous(limits = c(-110,110),
+                       sec.axis = sec_axis(~., name = "Relative frequency",
+                                           labels = c("100%", "50%", "0%", "50%", "100%")),
+                       labels = c(100, 50, 0, 50, 100)) +
+        geom_point(stat = "identity", aes(y = confidence_signed,
+                                      group = decision:perspective,
+                                          shape = decision), size = 2.5) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    scale_shape_manual(values = c(15, 22), name = "Mean (\u00B1SD) confidence in decision",
+                       labels = c("Endanger adults (more lives)",
+                                  "Endanger children (fewer lives)")) +
+    scale_fill_manual(values = c("#ef8a62","#67a9cf", "black", "white"),
+                      name = "Relative frequency of decision",
+                      labels = c("Endanger adults (more lives)",
+                                 "Endanger children (fewer lives)")) +
+            geom_point(stat = "identity", aes(y = confidence_signed,
+                                      group = decision:perspective,
+                                          fill = decision2, shape = decision), size = 3, show.legend = FALSE) +
+    facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
+        guides(fill = guide_legend(order = 1),
+           shape = guide_legend(order = 2)) +
+    coord_flip() + theme(legend.position = "bottom", legend.direction = "vertical")
+
+
+
+
+
 child.ctab <- ctab(child.sub$motorist, child.sub$perspective,
                    child.sub$decision, percentages=TRUE, type = "row")
 
@@ -209,9 +278,6 @@ child.cont$Freq <- ifelse(child.cont$decision == "hitChildren",
 
 child.sub$confidence_signed <- ifelse(child.sub$decision == "hitChildren",
                                       -child.sub$confidence, child.sub$confidence)
-
-motorist_names <- c("self-driving" = "Self-driving car",
-                    "human" = "Human driver")
 
 child_raw.plot <- ggplot(child.cont, aes(x = perspective,
                                          group = decision:perspective)) +
@@ -367,24 +433,73 @@ carsac.sub$perspective <- combineLevels(
 
 <<carsac-plot>>=
 
-carsac.ctab <- ctab(carsac.sub$motorist,
-                    carsac.sub$perspective,
-                    carsac.sub$decision,
-                    percentages=TRUE, type = "row")
+
+carsac.sub$confidence_signed <- ifelse(
+    carsac.sub$decision == "hitPedestrians",
+    -carsac.sub$confidence,
+    carsac.sub$confidence)
+
+
+carsac_means <- do.call(data.frame, aggregate(
+    confidence_signed ~
+        motorist + perspective + decision,
+    data = carsac.sub, FUN=function(x) c(mean = mean(x), sd = sd(x))))
+
+carsac_means$decision <- paste("x_", carsac_means$decision, sep="")
+
+carsac.ctab <- ctab(carsac.sub$motorist, carsac.sub$perspective,
+                      carsac.sub$decision, percentages=TRUE, type = "row")
 
 carsac.cont <- as.data.frame(carsac.ctab$ctab)
 colnames(carsac.cont)[1] <- "motorist"
 colnames(carsac.cont)[2] <- "perspective"
 colnames(carsac.cont)[3] <- "decision"
 
-carsac.cont$Freq <- ifelse(
-    carsac.cont$decision == "selfSacrifice",
-    -carsac.cont$Freq, carsac.cont$Freq)
+carsac.cont$confidence_signed <- carsac_means$confidence_signed.mean
 
-carsac.sub$confidence_signed <- ifelse(
-    carsac.sub$decision == "selfSacrifice",
-    -carsac.sub$confidence,
-    carsac.sub$confidence)
+carsac.cont$confidence_sd <- carsac_means$confidence_signed.sd
+carsac.cont$decision2 <- carsac_means$decision
+
+carsac.cont$Freq <- ifelse(carsac.cont$decision == "hitPedestrians",
+                             -carsac.cont$Freq, carsac.cont$Freq)
+
+carsac.sub$confidence_signed <- ifelse(carsac.sub$decision == "hitPedestrians",
+                                         -carsac.sub$confidence, carsac.sub$confidence)
+
+carsac_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
+                                         group = decision:perspective)) +
+    geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
+    ylab("Confidence") +
+     geom_linerange(aes(ymin = confidence_signed - confidence_sd,
+                       ymax = confidence_signed + confidence_sd),
+               data = carsac.cont) +
+    scale_x_discrete(name = "Perspective",
+                     limits = rev(levels(carsac.cont$perspective)),
+                     labels = c("Pedestrian", "Passenger", "Bystander")) +
+        scale_y_continuous(limits = c(-110,110),
+                       sec.axis = sec_axis(~., name = "Relative frequency",
+                                           labels = c("100%", "50%", "0%", "50%", "100%")),
+                       labels = c(100, 50, 0, 50, 100)) +
+        geom_point(stat = "identity", aes(y = confidence_signed,
+                                      group = decision:perspective,
+                                          shape = decision2), size = 2.5) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    scale_shape_manual(values = c(22, 15), name = "Mean (\u00B1SD) confidence in decision",
+                       labels = c("Endanger pedestrians",
+                                  "Endanger passengers")) +
+    scale_fill_manual(values = c("#67a9cf", "#ef8a62", "white", "black"),
+                      name = "Relative frequency of decision",
+                       labels = c("Endanger pedestrians",
+                                  "Endanger passengers")) +
+            geom_point(stat = "identity", aes(y = confidence_signed,
+                                      group = decision:perspective,
+                                          fill = decision2, shape = decision2), size = 3, show.legend = FALSE) +
+    facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
+        guides(fill = guide_legend(order = 1),
+           shape = guide_legend(order = 2)) +
+    coord_flip() + theme(legend.position = "bottom", legend.direction = "vertical")
+
+
 
 motorist_names <- c("self-driving" = "Self-driving car",
                     "human" = "Human driver")
@@ -533,9 +648,13 @@ TODO: Add follow analyses
 
 <<sidewalk-plot>>=
 
+
+sidewalk.sub$confidence_signed <- ifelse(sidewalk.sub$decision == "hitSidewalk",
+                                         -sidewalk.sub$confidence, sidewalk.sub$confidence)
+
 sidewalk_means <- do.call(data.frame, aggregate(
     confidence_signed ~
-        perspective + motorist + decision,
+        motorist + perspective + decision,
     data = sidewalk.sub, FUN=function(x) c(mean = mean(x), sd = sd(x))))
 
 sidewalk_means$decision <- paste("x_", sidewalk_means$decision, sep="")
@@ -555,9 +674,6 @@ sidewalk.cont$decision2 <- sidewalk_means$decision
 
 sidewalk.cont$Freq <- ifelse(sidewalk.cont$decision == "hitSidewalk",
                              -sidewalk.cont$Freq, sidewalk.cont$Freq)
-
-sidewalk.sub$confidence_signed <- ifelse(sidewalk.sub$decision == "hitSidewalk",
-                                         -sidewalk.sub$confidence, sidewalk.sub$confidence)
 
 sidewalk_raw.plot <- ggplot(sidewalk.cont, aes(x = perspective,
                                          group = decision:perspective)) +
