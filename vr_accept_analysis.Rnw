@@ -4,19 +4,17 @@
 \date{\today}
 
 % specify packages and configs
-\usepackage{breakurl}
-\def\UrlBreaks{\do\/\do-}
 \usepackage{graphicx}
-\usepackage{float}
-\usepackage{natbib}
-\usepackage{usebib}
-\usepackage{lmodern}
-\usepackage{slantsc}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage[utf8]{inputenc}
-\usepackage{hyperref}
-\hypersetup{colorlinks=true,
+%\usepackage{float}
+%\usepackage{natbib}
+%\usepackage{usebib}
+%\usepackage{lmodern}
+%\usepackage{slantsc}
+%\usepackage{amsmath}
+%\usepackage{amssymb}
+%\usepackage[utf8]{inputenc}
+%\usepackage{hyperref}
+%\hypersetup{colorlinks=true,
   linkcolor=black,
   citecolor=black,
   urlcolor=blue}
@@ -56,7 +54,6 @@ require(fifer)
 require(multcomp)
 require(vcdExtra)
 require(catspec)
-require(ggstance)
 
 @
 
@@ -68,6 +65,8 @@ We now read in the data files.
 child.data <- read.csv("vr_data/childrenCSV.csv")
 carsac.data <- read.csv("vr_data/selfSacCSV.csv")
 sidewalk.data <- read.csv("vr_data/sidewalkCSV.csv")
+
+theme_set(theme_cowplot(font_size=10))
 @
 
 Some of the variables need cleaning, so we rename them.
@@ -92,7 +91,11 @@ child.data$gender <- factor(child.data$gender,
 # remove sanity check and perception check failures
 child.sub <- subset(child.data, child.data$passedSanCheck == "True" &
                                 child.data$SecondSanCheck == "True")
-# carsac
+# reorder perspective levels
+child.sub$perspective <- factor(child.sub$perspective, levels = c("Observer", "Passenger", "PedSmall", "PedLarge"))
+
+
+                                        # carsac
 # rename gender variable
 colnames(carsac.data)[2] <- "gender"
 # rename driver variable
@@ -128,8 +131,20 @@ sidewalk.data$gender <- factor(sidewalk.data$gender,
 # set confidence to numeric
 sidewalk.data$confidence <- as.numeric(sidewalk.data$confidence)
                                         # sanity check
-sidewalk.sub <- subset(sidewalk.data, sidewalk.data$passedSanCheck == "True" &
-                                      SecondSanCheck == "True")
+sidewalk.sub <- subset(sidewalk.data,
+                       sidewalk.data$passedSanCheck == "True" &
+                       SecondSanCheck == "True")
+
+
+# reverse the decision levels
+#sidewalk.sub$decision <- factor(sidewalk.sub$decision, levels = rev(levels(sidewalk.sub$decision)))
+
+sidewalk.sub$perspective <- factor(sidewalk.sub$perspective,
+                                   levels = c("Observer",
+                                              "Passenger",
+                                              "PedSmall",
+                                              "PedLarge"))
+
 @
 
 \section{Manipulation check}
@@ -138,6 +153,7 @@ sidewalk.sub <- subset(sidewalk.data, sidewalk.data$passedSanCheck == "True" &
 We use a \(\chi^2\) goodness of fit test to see if perspective
 affects identification.  First we create a subset of only one trial,
 and collapse the two pedestrian perspectives.
+
 <<manip-check-sub>>=
 manip_check.sub <- subset(child.sub, trial == "largeGroups")
 manip_check.sub$perspective <- combineLevels(manip_check.sub$perspective,
@@ -146,12 +162,14 @@ manip_check.sub$perspective <- combineLevels(manip_check.sub$perspective,
 @
 
 Next we create a contingency table.
+
 <<manip-check-table, results = 'asis'>>=
 manip_check.xtab <- xtabs(~perspective + perceivedIden, data = manip_check.sub)
 print(xtable(manip_check.xtab))
 @
 
 Then we compute the test statistic.
+
 <<manip-check-chisq>>=
 manip_check.chisq <- chisq.test(manip_check.xtab, simulate.p.value = TRUE)
 manip_check.chisq
@@ -175,11 +193,7 @@ print(xtable(manip_check.post))
 
 First we look at the raw proportions of the responses.
 
-<<child-mosaic>>=
-
-# reverse levels of decision
-
-child.sub$decision <- factor(child.sub$decision, levels = rev(levels(child.sub$decision)))
+<<child-plot>>=
 
 child.ctab <- ctab(child.sub$motorist, child.sub$perspective,
                    child.sub$decision, percentages=TRUE, type = "row")
@@ -204,30 +218,38 @@ child_raw.plot <- ggplot(child.cont, aes(x = perspective,
     geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
     ylab("Confidence") +
     scale_x_discrete(name = "Perspective",
-                       labels = c("Bystander",
-                                  "Passenger",
-                                  "Pedestrian \n with adults",
-                                  "Pedestrian \n with children")) +
-        scale_y_continuous(limits = c(-110,110),
+                     limits = rev(levels(child.cont$perspective)),
+                     labels = c("Pedestrian\nwith adults", "Pedestrian\nwith children",
+                                "Passenger", "Bystander")) +
+    scale_y_continuous(limits = c(-110,110),
                        sec.axis = sec_axis(~., name = "Relative frequency",
                                            labels = c("100%", "50%", "0%", "50%", "100%")),
                        labels = c(100, 50, 0, 50, 100)) +
     stat_summary(fun.y = mean, geom = "point",
-                 aes(y = confidence_signed, shape = decision), data = child.sub, size = 3) +
-    stat_summary(fun.y = mean,
-               fun.ymin = function(x) mean(x) - sd(x),
-               fun.ymax = function(x) mean(x) + sd(x), geom = "linerange", aes(y = confidence_signed, group = decision:perspective), data = child.sub) +
+                 aes(y = confidence_signed, shape = decision),
+                 data = child.sub, size = 3) +
+    stat_summary(fun.ymin = function(y) mean(y) - sd(y),
+               fun.ymax = function(y) mean(y) + sd(y),
+               geom = "linerange",
+               aes(y = confidence_signed,
+                   group = decision:perspective),
+               data = child.sub) +
     geom_hline(yintercept = 0, linetype = "dashed") +
     scale_shape_manual(values = c(0, 15), name = "Mean (\u00B1SD) confidence in decision",
-                       labels = c("Risk lives of children", "Risk lives of adults")) +
-    scale_fill_manual(values = c("dodgerblue1", "darkorange1"),
-                      name = "Relative frequency of decision",
-                      labels = c("Risk lives of children", "Risk lives of adults")) +
+                       limits = rev(levels(child.cont$decision)),
+                       labels = c("Endanger children (fewer lives)", "Endanger adults (more lives)")) +
+   scale_fill_manual(name = "Relative frequency of decision",
+                     labels = c("Endanger children (fewer lives)", "Endanger adults (more lives)"),
+                     limits = rev(levels(child.cont$decision)),
+                     values = c("#67a9cf","#ef8a62")) +
     facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
     guides(fill = guide_legend(order = 1),
            shape = guide_legend(order = 2)) +
     coord_flip() + theme(legend.position = "bottom", legend.direction = "vertical")
 
+
+
+child_raw.plot
 
 @
 
@@ -237,13 +259,11 @@ child_raw.plot <- ggplot(child.cont, aes(x = perspective,
 We run a logit mixed model to predict the decision of the participants.
 
 <<child-adult-glmm,results='asis'>>=
+
 (nc <- detectCores())
 cl <- makeCluster(rep("localhost", nc))
 
 child.sub$age_c <- scale(child.sub$age)
-confidence <- round_any(child.sub$confidence, 10) / 10
-
-child.sub$confidenceW <- ifelse(child.sub$confidence > 0, round_any(child.sub$confidence, 10, f = ceiling), 10)
 
 child_glmm <- mixed(decision ~ perspective * motorist +
                         trial + gender +
@@ -273,6 +293,7 @@ print(xtable(child_glmm_anova))
 @
 
 We then check the residuals of the model.
+
 <<check-resid>>=
 child_glmm.resid <- simulateResiduals(
     fittedModel = child_glmm$full_model,
@@ -296,26 +317,6 @@ testUniformity(child_conf_lmm.resid)
 
 If they look okay, we follow up any significant differences.
 
-\subsection{Plotting}
-\label{sec:child-plot}
-
-
-Depending on which effects or interactions we find, we probably want to change this plot. It currently just plots the Estimated Marginal Means for the 2-way interaction.
-
-<<child-emm-plot>>=
-child_emm_plot <- emmip(child_glmm, perspective ~ trial | motorist, type = "response") +
-    theme_cowplot(font_size = 10) +
-    scale_y_continuous(name = "P(Choosing `hit children' as more acceptable)",
-                       limits = c(0, 1)) + coord_equal(ratio = 3) +
-    scale_color_manual(name = "Perspective",
-                       labels = c("Bystander",
-                                  "Passenger",
-                                  "Pedestrian wAdults",
-                                  "Pedestrian wChildren"),
-                       values = c("red3", "skyblue", "orange1", "purple"))
-child_emm_plot
-
-@
 
 \subsection{Follow-up comparisons}
 For a good example, see https://osf.io/q2a3b/
@@ -326,7 +327,8 @@ should follow that up with comparisons of perspective within each
 level of motorist.
 
 <<child-int,results='asis'>>=
-emm_child_i <- emmeans(child_glmm, ~ perspective | motorist, type = "response",
+emm_child_i <- emmeans(child_glmm, ~ perspective | motorist,
+                       type = "response",
                        contr = "pairwise")
 xtable(emm_child_i$contrasts)
 @
@@ -355,25 +357,34 @@ xtable(emm_child_motorist$contrasts)
 \label{sec:carped}
 
 We collapse both pedestrian perspectives for this dilemma.
-<<carped-clean>>=
-carsac.sub$perspective <- combineLevels(carsac.sub$perspective,
-                                        levs=c("PedLarge", "PedSmall"),
-                                        newLabel = "Pedestrian")
+<<carsac-clean>>=
+carsac.sub$perspective <- combineLevels(
+    carsac.sub$perspective,
+    levs=c("PedLarge", "PedSmall"),
+    newLabel = "Pedestrian")
 
 @
 
-<<carsac-mosaic>>=
+<<carsac-plot>>=
 
-carsac.ctab <- ctab(carsac.sub$motorist, carsac.sub$perspective, carsac.sub$decision, percentages=TRUE, type = "row")
+carsac.ctab <- ctab(carsac.sub$motorist,
+                    carsac.sub$perspective,
+                    carsac.sub$decision,
+                    percentages=TRUE, type = "row")
 
 carsac.cont <- as.data.frame(carsac.ctab$ctab)
 colnames(carsac.cont)[1] <- "motorist"
 colnames(carsac.cont)[2] <- "perspective"
 colnames(carsac.cont)[3] <- "decision"
 
-carsac.cont$Freq <- ifelse(carsac.cont$decision == "hitPedestrians", -carsac.cont$Freq, carsac.cont$Freq)
+carsac.cont$Freq <- ifelse(
+    carsac.cont$decision == "selfSacrifice",
+    -carsac.cont$Freq, carsac.cont$Freq)
 
-carsac.sub$confidence_signed <- ifelse(carsac.sub$decision == "hitPedestrians", -carsac.sub$confidence, carsac.sub$confidence)
+carsac.sub$confidence_signed <- ifelse(
+    carsac.sub$decision == "selfSacrifice",
+    -carsac.sub$confidence,
+    carsac.sub$confidence)
 
 motorist_names <- c("self-driving" = "Self-driving car",
                     "human" = "Human driver")
@@ -382,37 +393,49 @@ carsac_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
                                          group = decision:perspective)) +
     geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
     ylab("Confidence") +
-    scale_x_discrete(name = "Perspective",
-                       labels = c("Bystander",
-                                  "Passenger",
-                                  "Pedestrian")) +
-        scale_y_continuous(limits = c(-110,110),
-                       sec.axis = sec_axis(~., name = "Relative frequency",
-                                           labels = c("100%", "50%", "0%", "50%", "100%")),
-                       labels = c(100, 50, 0, 50, 100)) +
+        scale_x_discrete(name = "Perspective",
+                     limits = rev(levels(carsac.cont$perspective)),
+                     labels = c("Pedestrian", "Passenger", "Bystander")) +
+        scale_y_continuous(
+            limits = c(-110,110),
+            sec.axis = sec_axis(
+                ~., name = "Relative frequency",
+                labels = c("100%", "50%", "0%",
+                           "50%", "100%")),
+            labels = c(100, 50, 0, 50, 100)) +
+    stat_summary(fun.ymin = function(x) mean(x) - sd(x),
+               fun.ymax = function(x) mean(x) + sd(x),
+               geom = "linerange",
+               aes(y = confidence_signed, group = decision:perspective),
+               data = carsac.sub) +
     stat_summary(fun.y = mean, geom = "point",
-                 aes(y = confidence_signed, shape = decision), data = carsac.sub, size = 3) +
-    stat_summary(fun.y = mean,
-               fun.ymin = function(x) mean(x) - sd(x),
-               fun.ymax = function(x) mean(x) + sd(x), geom = "linerange", aes(y = confidence_signed, group = decision:perspective), data = carsac.sub) +
+                 aes(y = confidence_signed, color = decision),
+                 data = carsac.sub, size = 3) +
     geom_hline(yintercept = 0, linetype = "dashed") +
-    scale_shape_manual(values = c(0, 15), name = "Mean (\u00B1SD) confidence in decision",
-                       labels = c("Risk lives of pedestrians", "Risk lives of car occupants")) +
-    scale_fill_manual(values = c("dodgerblue1", "darkorange1"),
+    scale_color_manual(values = c("black", "grey")) +
+    scale_shape_manual(values = c("c", "c"),
+                       name = "Mean (\u00B1SD) confidence in decision",
+                       limits = rev(levels(carsac.cont$decision)),
+                       labels = c("Endanger car occupants",
+                                  "Endanger pedestrians")) +
+    scale_fill_manual(values = c("#67a9cf","#ef8a62"),
                       name = "Relative frequency of decision",
-                      labels = c("Risk lives of pedestrians", "Risk lives of car occupants")) +
+                      limits = rev(levels(carsac.cont$decision)),
+                      labels = c("Endanger car occupants",
+                                 "Endanger pedestrians")) +
     facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
     guides(fill = guide_legend(order = 1),
                shape = guide_legend(order = 2)) +
-    coord_flip() + theme(legend.position = "bottom", legend.direction = "vertical")
+    coord_flip() + theme(legend.position = "bottom",
+                         legend.direction = "vertical")
 
-
-
+carsac_raw.plot
 
 @
 
-\subsection{The model}
+\subsection{The models}
 \label{sec:carped-glmm}
+\subsubsection{Decision model}
 <<carped-glmm,results='asis'>>=
 (nc <- detectCores())
 cl <- makeCluster(rep("localhost", nc))
@@ -431,12 +454,6 @@ carsac_glmm <- mixed(decision ~ perspective + motorist +
                     control = glmerControl(optimizer = "bobyqa",
                                            optCtrl = list(maxfun = 2e5)))
 
-carsac_conf_lmm <- mixed(confidence ~ perspective * motorist * decision +
-                        (1 | participant.ID),
-                    method = "KR", # change to PB for final
-                    data = carsac.sub,
-                    args_test = list(nsim = 1000, cl = cl), cl = cl)
-
 stopCluster(cl)
 xtable(carsac_glmm$anova_table)
 @
@@ -450,39 +467,10 @@ carsac_glmm_resid.plot <- plotSimulatedResiduals(
     simulationOutput = carsac_glmm.resid)
 
 testUniformity(carsac_glmm.resid)
-
-
-carsac_lmm.resid <- simulateResiduals(
-    carsac_conf_lmm$full_model, n = 2000)
-carsac_lmm_resid.plot <- plotSimulatedResiduals(
-    carsac_lmm.resid)
-
-testUniformity(carsac_lmm.resid)
-
-@
-
-\subsection{Plotting}
-\label{sec:carped-plot}
-
-
-Depending on which effects or interactions we find, we probably want to change this plot. It currently just plots the Estimated Marginal Means for the 2-way interaction.
-
-<<carped-plot>>=
-carsac.plot <- emmip(carsac_glmm, perspective ~ trial | motorist, type = "response") +
-    theme_cowplot(font_size = 10) +
-    scale_y_continuous(name = "P(Choosing `crash car' as more acceptable)",
-                       limits = c(0, 1)) + coord_equal(ratio = 3) +
-    scale_color_manual(name = "Perspective",
-                       labels = c("Bystander",
-                                  "Passenger",
-                                  "Pedestrian"),
-                       values = c("red3", "skyblue", "orange1" , "purple"))
-
-carsac.plot
 @
 
 \subsection{Follow-up analyses}
-\label{sec:carped-followup}
+\label{sec:carped-dec-followup}
 
 If we find an interaction between perspective and motorist-type we
 should follow that up with comparisons of perspective within each
@@ -512,70 +500,123 @@ emm_carsac_motorist <- emmeans(carsac_glmm, pairwise ~ motorist,
                                type = 'response')
 xtable(emm_carsac_motorist$contrasts)
 @
+\subsubsection{Confidence model}
+<<carsac-conf-model,results='asis'>>=
+(nc <- detectCores())
+cl <- makeCluster(rep("localhost", nc))
+carsac_conf_lmm<- mixed(confidence ~ perspective * motorist * decision +
+                        trial + gender +
+                        opinAV + education +
+                        drivExperience + perceivedIden + age_c +
+                        (1 | participant.ID),
+                    method = "KR", # change to PB for final
+                    data = carsac.sub,
+                    args_test = list(nsim = 1000, cl = cl), cl = cl)
+stopCluster(cl)
+xtable(carsac_conf_lmm$anova_table)
+@
+
+<<carsac-conf-resid>>=
+carsac_lmm.resid <- simulateResiduals(
+    carsac_conf_lmm$full_model, n = 2000)
+carsac_lmm_resid.plot <- plotSimulatedResiduals(
+    carsac_lmm.resid)
+
+testUniformity(carsac_lmm.resid)
+@
+TODO: Add follow analyses
+<<carsac-conf-followup>>=
+@
 
 \section{Sidewalk vs road dilemma}
 \label{sec:sidewalk}
 
-<<sidewalk-mosaic>>=
+<<sidewalk-plot>>=
 
-# reverse the decision levels
-sidewalk.sub$decision <- factor(sidewalk.sub$decision, levels = rev(levels(sidewalk.sub$decision)))
+sidewalk_means <- do.call(data.frame, aggregate(
+    confidence_signed ~
+        perspective + motorist + decision,
+    data = sidewalk.sub, FUN=function(x) c(mean = mean(x), sd = sd(x))))
 
-sidewalk.ctab <- ctab(sidewalk.sub$motorist, sidewalk.sub$perspective, sidewalk.sub$decision, percentages=TRUE, type = "row")
+sidewalk_means$decision <- paste("x_", sidewalk_means$decision, sep="")
+
+sidewalk.ctab <- ctab(sidewalk.sub$motorist, sidewalk.sub$perspective,
+                      sidewalk.sub$decision, percentages=TRUE, type = "row")
 
 sidewalk.cont <- as.data.frame(sidewalk.ctab$ctab)
 colnames(sidewalk.cont)[1] <- "motorist"
 colnames(sidewalk.cont)[2] <- "perspective"
 colnames(sidewalk.cont)[3] <- "decision"
 
-sidewalk.cont$Freq <- ifelse(sidewalk.cont$decision == "hitStreet", -sidewalk.cont$Freq, sidewalk.cont$Freq)
+sidewalk.cont$confidence_signed <- sidewalk_means$confidence_signed.mean
 
-sidewalk.sub$confidence_signed <- ifelse(sidewalk.sub$decision == "hitStreet", -sidewalk.sub$confidence, sidewalk.sub$confidence)
+sidewalk.cont$confidence_sd <- sidewalk_means$confidence_signed.sd
+sidewalk.cont$decision2 <- sidewalk_means$decision
+
+sidewalk.cont$Freq <- ifelse(sidewalk.cont$decision == "hitSidewalk",
+                             -sidewalk.cont$Freq, sidewalk.cont$Freq)
+
+sidewalk.sub$confidence_signed <- ifelse(sidewalk.sub$decision == "hitSidewalk",
+                                         -sidewalk.sub$confidence, sidewalk.sub$confidence)
 
 sidewalk_raw.plot <- ggplot(sidewalk.cont, aes(x = perspective,
                                          group = decision:perspective)) +
     geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
     ylab("Confidence") +
+     geom_linerange(aes(ymin = confidence_signed - confidence_sd,
+                       ymax = confidence_signed + confidence_sd),
+               data = sidewalk.cont) +
     scale_x_discrete(name = "Perspective",
-                       labels = c("Bystander",
-                                  "Passenger",
-                                  "Pedestrian \n on road",
-                                  "Pedestrian \n on sidewalk")) +
+                     limits = rev(levels(sidewalk.cont$perspective)),
+                     labels = c("Pedestrian\non road", "Pedestrian\non sidewalk",
+                                "Passenger", "Bystander")) +
         scale_y_continuous(limits = c(-110,110),
                        sec.axis = sec_axis(~., name = "Relative frequency",
                                            labels = c("100%", "50%", "0%", "50%", "100%")),
                        labels = c(100, 50, 0, 50, 100)) +
-    stat_summary(fun.y = mean, geom = "point",
-                 aes(y = confidence_signed, shape = decision), data = sidewalk.sub, size = 3) +
-    stat_summary(fun.y = mean,
-               fun.ymin = function(x) mean(x) - sd(x),
-               fun.ymax = function(x) mean(x) + sd(x), geom = "linerange", aes(y = confidence_signed, group = decision:perspective), data = sidewalk.sub) +
+        geom_point(stat = "identity", aes(y = confidence_signed,
+                                      group = decision:perspective,
+                                          shape = decision2), size = 2.5) +
     geom_hline(yintercept = 0, linetype = "dashed") +
-    scale_shape_manual(values = c(0, 15), name = "Mean (\u00B1SD) confidence in decision",
-                       labels = c("Risk lives of pedestrians on road", "Risk lives of pedestrians on sidewalk")) +
-    scale_fill_manual(values = c("dodgerblue1", "darkorange1"),
+    scale_shape_manual(values = c(22, 15), name = "Mean (\u00B1SD) confidence in decision",
+                       labels = c("Endanger pedestrians on sidewalk (fewer lives)",
+                                  "Endanger pedestrians on road (more lives)")) +
+    scale_fill_manual(values = c("#67a9cf", "#ef8a62", "white", "black"),
                       name = "Relative frequency of decision",
-                      labels = c("Risk lives of pedestrians on road", "Risk lives of pedestrians on sidewalk")) +
+                      labels = c("Endanger pedestrians on sidewalk (fewer lives)",
+                                 "Endanger pedestrians on road (more lives)")) +
+            geom_point(stat = "identity", aes(y = confidence_signed,
+                                      group = decision:perspective,
+                                          fill = decision2, shape = decision2), size = 3, show.legend = FALSE) +
     facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
-    guides(fill = guide_legend(order = 1),
+        guides(fill = guide_legend(order = 1),
            shape = guide_legend(order = 2)) +
     coord_flip() + theme(legend.position = "bottom", legend.direction = "vertical")
 
+
+
+sidewalk_raw.plot
+@
+
 \label{sec:sidewalk-glmm}
 <<sidewalk-glmm,results='asis'>>=
+sidewalk.sub$age_c <- scale(sidewalk.sub$age)
+
 (nc <- detectCores())
 cl <- makeCluster(rep("localhost", nc))
 
-sidewalk_glmm <- mixed(decision ~ perspective +
-                        motorist +
+sidewalk_glmm <- mixed(decision ~ perspective + motorist +
                         perspective:motorist +
-                        trial + gender + #age +
+                        trial + gender + age_c + opinAV +
+                        education +  drivExperience + visImpairment +
+                        perceivedIden +
                         (1 | participant.ID),
-                    method = "PB", # change to PB for final
+                    method = "LRT", # change to PB for final
                     family = "binomial", data = sidewalk.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
                                            optCtrl = list(maxfun = 2e5)))
+
 stopCluster(cl)
 xtable(sidewalk_glmm$anova_table)
 @
@@ -587,29 +628,8 @@ sidewalk_glmm.resid <- simulateResiduals(
     fittedModel = sidewalk_glmm$full_model, n = 2000)
 sidewalk_glmm_resid.plot <- plotSimulatedResiduals(
     simulationOutput = sidewalk_glmm.resid)
-@
 
-\subsection{Plotting}
-\label{sec:sidewalk-plot}
-
-Depending on which effects or interactions we find, we probably want to change this plot. It currently just plots the Estimated Marginal Means for the 2-way interaction.
-
-<<sidewalk-plot>>=
-sidewalk.plot <- emmip(sidewalk_glmm, perspective ~ trial | motorist,
-                       type = "response") +
-    theme_cowplot(font_size = 10) +
-    scale_y_continuous(
-        name = "P(Choosing `swerve to sidewalk' as more acceptable)",
-                       limits = c(0, 1)) + coord_equal(ratio = 3) +
-    scale_color_manual(name = "Perspective",
-                       labels = c("Bystander",
-                                  "Passenger",
-                                  "Pedestrian on road",
-                                  "Pedestrian on sidewalk"),
-                       values = c("red3", "skyblue",
-                                  "orange1", "purple"))
-
-sidewalk.plot
+testUniformity(sidewalk_glmm.resid)
 @
 
 \subsection{Follow-up analyses}
@@ -644,7 +664,33 @@ emm_sidewalk_motorist <- emmeans(sidewalk_glmm, pairwise ~ motorist,
 xtable(emm_sidewalk_motorist$contrasts)
 @
 
+\subsubsection{Confidence}
 
+<<sidewalk-conf-model,results='asis'>>=
+(nc <- detectCores())
+cl <- makeCluster(rep("localhost", nc))
 
+sidewalk_conf_lmm <- mixed(confidence ~ perspective * motorist * decision +
+                        trial + gender +
+                        opinAV + education +
+                        drivExperience + perceivedIden + age_c +
+                        (1 | participant.ID),
+                    method = "KR", # change to PB for final
+                    data = sidewalk.sub,
+                    args_test = list(nsim = 1000, cl = cl), cl = cl)
+xtable(sidewalk_conf_lmm$anova_table)
 
+@
+
+<<sidewalk-conf-resid>>=
+child_conf_lmm.resid <- simulateResiduals(
+    fittedModel = child_lmm_conf$full_model,
+    n = 2000)
+
+child_lmm_conf.plot <- plotSimulatedResiduals(
+    simulationOutput = child_conf_lmm.resid)
+
+testUniformity(child_conf_lmm.resid)
+
+@
 \end{document}
