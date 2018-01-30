@@ -355,7 +355,7 @@ child_glmm <- mixed(decision ~ perspective * motorist +
                         opinAV + education +
                         drivExperience + perceivedIden + age_c +
                         (1 | participant.ID),
-                    method = "LRT", # change to PB for final
+                    method = "PB", # change to PB for final
                     family = "binomial", data = child.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
@@ -588,7 +588,7 @@ carsac_glmm <- mixed(decision ~ perspective + motorist +
                         education +  drivExperience + visImpairment +
                         perceivedIden +
                         (1 | participant.ID),
-                    method = "LRT", # change to PB for final
+                    method = "PB", # change to PB for final
                     family = "binomial", data = carsac.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
@@ -798,7 +798,7 @@ sidewalk_glmm <- mixed(decision ~ perspective + motorist +
                         education +  drivExperience + visImpairment +
                         perceivedIden +
                         (1 | participant.ID),
-                    method = "LRT", # change to PB for final
+                    method = "PB", # change to PB for final
                     family = "binomial", data = sidewalk.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
