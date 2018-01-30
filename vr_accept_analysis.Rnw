@@ -57,7 +57,7 @@ child.data <- read.csv("vr_data/childrenCSV.csv")
 carsac.data <- read.csv("vr_data/selfSacCSV.csv")
 sidewalk.data <- read.csv("vr_data/sidewalkCSV.csv")
 
-theme_set(theme_cowplot(font_size=11))
+theme_set(theme_cowplot(font_size=12))
 @
 
 Some of the variables need cleaning, so we rename them.
@@ -303,7 +303,7 @@ child_raw.plot <- ggplot(child.cont, aes(x = perspective,
                      labels = c("Pedestrian\nwith adults",
                                 "Pedestrian\nwith children",
                                 "Passenger", "Bystander")) +
-    scale_y_continuous(limits = c(-110,110),
+    scale_y_continuous(limits = c(-102,102),
                        sec.axis = sec_axis(
                            ~., name = "Relative frequency (%)",
                            labels = c("100", "50", "0", "50", "100")),
@@ -316,14 +316,14 @@ child_raw.plot <- ggplot(child.cont, aes(x = perspective,
     scale_shape_manual(
         values = c(22, 15),
         name = "Mean (\u00B1SD) confidence in decision",
-        labels = c("Endanger child pedestrians (fewer lives)",
-                   "Endanger adult pedestrians (more lives)"),
+        labels = c("\nEndanger child pedestrians\n(fewer lives)\n",
+                   "\nEndanger adult pedestrians\n(more lives)\n"),
         limits = rev(levels(child.cont$decision))) +
     scale_fill_manual(
         values = c("#67a9cf", "#ef8a62", "white", "black"),
         name = "Relative frequency of decision",
-        labels = c("Endanger child pedestrians (fewer lives)",
-                   "Endanger adult pedestrians (more lives)"),
+        labels = c("\nEndanger child pedestrians\n(fewer lives)\n",
+                   "\nEndanger adult pedestrians\n(more lives)\n"),
         limits = c("hitChildren", "hitAdults",
                    "x_hitChildren", "x_hitAdults")) +
     geom_point(stat = "identity", aes(y = confidence_signed,
@@ -355,7 +355,7 @@ child_glmm <- mixed(decision ~ perspective * motorist +
                         opinAV + education +
                         drivExperience + perceivedIden + age_c +
                         (1 | participant.ID),
-                    method = "PB", # change to PB for final
+                    method = "LRT", # change to PB for final
                     family = "binomial", data = child.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
@@ -472,7 +472,7 @@ xtable(child_conf_lmm_decision$contrasts)
 
 child_conf_lmm_motorist <- emmeans(child_conf_lmm,
                                    pairwise ~ motorist)
-xtable(child_conf_lmm_decision$contrasts)
+xtable(child_conf_lmm_motorist$contrasts)
 
 child_conf_lmm_persp <- emmeans(child_conf_lmm,
                                 pairwise ~ perspective)
@@ -550,13 +550,13 @@ carsac_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
     scale_shape_manual(
         values = c(22, 15),
         name = "Mean (\u00B1SD) confidence in decision",
-        labels = c("Endanger pedestrians",
-                   "Endanger passengers")) +
+        labels = c("\nEndanger pedestrians\n",
+                   "\nEndanger passengers\n")) +
     scale_fill_manual(
         values = c("#67a9cf", "#ef8a62", "white", "black"),
         name = "Relative frequency of decision",
-        labels = c("Endanger pedestrians",
-                                  "Endanger passengers")) +
+        labels = c("\nEndanger pedestrians\n",
+                   "\nEndanger passengers\n")) +
             geom_point(stat = "identity",
                        aes(y = confidence_signed,
                            group = decision:perspective,
@@ -588,7 +588,7 @@ carsac_glmm <- mixed(decision ~ perspective + motorist +
                         education +  drivExperience + visImpairment +
                         perceivedIden +
                         (1 | participant.ID),
-                    method = "PB", # change to PB for final
+                    method = "LRT", # change to PB for final
                     family = "binomial", data = carsac.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
@@ -693,7 +693,7 @@ xtable(carsac_conf_lmm_decision$contrasts)
 
 carsac_conf_lmm_motorist <- emmeans(carsac_conf_lmm,
                                     pairwise ~ motorist)
-xtable(carsac_conf_lmm_decision$contrasts)
+xtable(carsac_conf_lmm_motorist$contrasts)
 
 carsac_conf_lmm_persp <- emmeans(carsac_conf_lmm,
                                  pairwise ~ perspective)
@@ -764,13 +764,13 @@ sidewalk_raw.plot <- ggplot(sidewalk.cont, aes(x = perspective,
     scale_shape_manual(
         values = c(22, 15),
         name = "Mean (\u00B1SD) confidence in decision",
-        labels = c("Endanger pedestrians on sidewalk (fewer lives)",
-                   "Endanger pedestrians on road (more lives)")) +
+        labels = c("\nEndanger pedestrians on sidewalk\n(fewer lives)\n",
+                   "\nEndanger pedestrians on road\n(more lives)\n")) +
     scale_fill_manual(
         values = c("#67a9cf", "#ef8a62", "white", "black"),
         name = "Relative frequency of decision",
-        labels = c("Endanger pedestrians on sidewalk (fewer lives)",
-                   "Endanger pedestrians on road (more lives)")) +
+        labels = c("\nEndanger pedestrians on sidewalk\n(fewer lives)\n",
+                   "\nEndanger pedestrians on road\n(more lives)\n")) +
     geom_point(stat = "identity",
                aes(y = confidence_signed,
                    group = decision:perspective,
@@ -798,7 +798,7 @@ sidewalk_glmm <- mixed(decision ~ perspective + motorist +
                         education +  drivExperience + visImpairment +
                         perceivedIden +
                         (1 | participant.ID),
-                    method = "PB", # change to PB for final
+                    method = "LRT", # change to PB for final
                     family = "binomial", data = sidewalk.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
