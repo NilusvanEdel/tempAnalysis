@@ -218,6 +218,7 @@ child.cont$confidence_signed <- child_means$confidence_signed.mean
 child.cont$confidence_sd <- child_means$confidence_signed.sd
 child.cont$decision2 <- child_means$decision
 
+
 child.cont$Freq <- ifelse(child.cont$decision == "hitChildren",
                              -child.cont$Freq, child.cont$Freq)
 
@@ -230,31 +231,33 @@ child_raw.plot <- ggplot(child.cont, aes(x = perspective,
                                          group = decision:perspective)) +
     geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
     ylab("Confidence") +
-     geom_linerange(aes(ymin = confidence_signed - confidence_sd,
-                       ymax = confidence_signed + confidence_sd),
+     geom_errorbar(aes(ymin = confidence_signed - confidence_sd,
+                       ymax = confidence_signed + confidence_sd, width = 0.1),
                data = child.cont) +
     scale_x_discrete(name = "Perspective",
-                     limits = rev(levels(child.cont$perspective)),
+                     limits = levels(child.cont$perspective),
                      labels = c("Pedestrian\nwith adults", "Pedestrian\nwith child",
                                 "Passenger", "Bystander")) +
         scale_y_continuous(limits = c(-110,110),
-                       sec.axis = sec_axis(~., name = "Relative frequency",
-                                           labels = c("100%", "50%", "0%", "50%", "100%")),
+                       sec.axis = sec_axis(~., name = "Relative frequency (%)",
+                                           labels = c("100", "50", "0", "50", "100")),
                        labels = c(100, 50, 0, 50, 100)) +
         geom_point(stat = "identity", aes(y = confidence_signed,
                                       group = decision:perspective,
                                           shape = decision), size = 2.5) +
     geom_hline(yintercept = 0, linetype = "dashed") +
-    scale_shape_manual(values = c(15, 22), name = "Mean (\u00B1SD) confidence in decision",
-                       labels = c("Endanger adults (more lives)",
-                                  "Endanger children (fewer lives)")) +
-    scale_fill_manual(values = c("#ef8a62","#67a9cf", "black", "white"),
+    scale_shape_manual(values = c(22, 15), name = "Mean (\u00B1SD) confidence in decision",
+                       labels = c("Endanger child pedestrians (fewer lives)",
+                                  "Endanger adult pedestrians (more lives)"),
+                       limits = rev(levels(child.cont$decision))) +
+    scale_fill_manual(values = c("#67a9cf", "#ef8a62", "black", "white"),
                       name = "Relative frequency of decision",
-                      labels = c("Endanger adults (more lives)",
-                                 "Endanger children (fewer lives)")) +
+                      labels = c("Endanger child pedestrians (fewer lives)",
+                                 "Endanger adult pedestrians (adult lives)")) +
             geom_point(stat = "identity", aes(y = confidence_signed,
                                       group = decision:perspective,
-                                          fill = decision2, shape = decision), size = 3, show.legend = FALSE) +
+                                          fill = decision2, shape = decision),
+                       size = 3, show.legend = FALSE) +
     facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
         guides(fill = guide_legend(order = 1),
            shape = guide_legend(order = 2)) +
@@ -264,54 +267,54 @@ child_raw.plot <- ggplot(child.cont, aes(x = perspective,
 
 
 
-child.ctab <- ctab(child.sub$motorist, child.sub$perspective,
-                   child.sub$decision, percentages=TRUE, type = "row")
+## child.ctab <- ctab(child.sub$motorist, child.sub$perspective,
+##                    child.sub$decision, percentages=TRUE, type = "row")
 
-child.cont <- as.data.frame(child.ctab$ctab)
-colnames(child.cont)[1] <- "motorist"
-colnames(child.cont)[2] <- "perspective"
-colnames(child.cont)[3] <- "decision"
+## child.cont <- as.data.frame(child.ctab$ctab)
+## colnames(child.cont)[1] <- "motorist"
+## colnames(child.cont)[2] <- "perspective"
+## colnames(child.cont)[3] <- "decision"
 
-child.cont$Freq <- ifelse(child.cont$decision == "hitChildren",
-                          -child.cont$Freq, child.cont$Freq)
+## child.cont$Freq <- ifelse(child.cont$decision == "hitChildren",
+##                           -child.cont$Freq, child.cont$Freq)
 
 
-child.sub$confidence_signed <- ifelse(child.sub$decision == "hitChildren",
-                                      -child.sub$confidence, child.sub$confidence)
+## child.sub$confidence_signed <- ifelse(child.sub$decision == "hitChildren",
+##                                       -child.sub$confidence, child.sub$confidence)
 
-child_raw.plot <- ggplot(child.cont, aes(x = perspective,
-                                         group = decision:perspective)) +
-    geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
-    ylab("Confidence") +
-    scale_x_discrete(name = "Perspective",
-                     limits = rev(levels(child.cont$perspective)),
-                     labels = c("Pedestrian\nwith adults", "Pedestrian\nwith children",
-                                "Passenger", "Bystander")) +
-    scale_y_continuous(limits = c(-110,110),
-                       sec.axis = sec_axis(~., name = "Relative frequency",
-                                           labels = c("100%", "50%", "0%", "50%", "100%")),
-                       labels = c(100, 50, 0, 50, 100)) +
-    stat_summary(fun.y = mean, geom = "point",
-                 aes(y = confidence_signed, shape = decision),
-                 data = child.sub, size = 3) +
-    stat_summary(fun.ymin = function(y) mean(y) - sd(y),
-               fun.ymax = function(y) mean(y) + sd(y),
-               geom = "linerange",
-               aes(y = confidence_signed,
-                   group = decision:perspective),
-               data = child.sub) +
-    geom_hline(yintercept = 0, linetype = "dashed") +
-    scale_shape_manual(values = c(0, 15), name = "Mean (\u00B1SD) confidence in decision",
-                       limits = rev(levels(child.cont$decision)),
-                       labels = c("Endanger children (fewer lives)", "Endanger adults (more lives)")) +
-   scale_fill_manual(name = "Relative frequency of decision",
-                     labels = c("Endanger children (fewer lives)", "Endanger adults (more lives)"),
-                     limits = rev(levels(child.cont$decision)),
-                     values = c("#67a9cf","#ef8a62")) +
-    facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
-    guides(fill = guide_legend(order = 1),
-           shape = guide_legend(order = 2)) +
-    coord_flip() + theme(legend.position = "bottom", legend.direction = "vertical")
+## child_raw.plot <- ggplot(child.cont, aes(x = perspective,
+##                                          group = decision:perspective)) +
+##     geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
+##     ylab("Confidence") +
+##     scale_x_discrete(name = "Perspective",
+##                      limits = rev(levels(child.cont$perspective)),
+##                      labels = c("Pedestrian\nwith adults", "Pedestrian\nwith children",
+##                                 "Passenger", "Bystander")) +
+##     scale_y_continuous(limits = c(-110,110),
+##                        sec.axis = sec_axis(~., name = "Relative frequency",
+##                                            labels = c("100%", "50%", "0%", "50%", "100%")),
+##                        labels = c(100, 50, 0, 50, 100)) +
+##     stat_summary(fun.y = mean, geom = "point",
+##                  aes(y = confidence_signed, shape = decision),
+##                  data = child.sub, size = 3) +
+##     stat_summary(fun.ymin = function(y) mean(y) - sd(y),
+##                fun.ymax = function(y) mean(y) + sd(y),
+##                geom = "linerange",
+##                aes(y = confidence_signed,
+##                    group = decision:perspective),
+##                data = child.sub) +
+##     geom_hline(yintercept = 0, linetype = "dashed") +
+##     scale_shape_manual(values = c(0, 15), name = "Mean (\u00B1SD) confidence in decision",
+##                        limits = rev(levels(child.cont$decision)),
+##                        labels = c("Endanger children (fewer lives)", "Endanger adults (more lives)")) +
+##    scale_fill_manual(name = "Relative frequency of decision",
+##                      labels = c("Endanger children (fewer lives)", "Endanger adults (more lives)"),
+##                      limits = rev(levels(child.cont$decision)),
+##                      values = c("#67a9cf","#ef8a62")) +
+##     facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
+##     guides(fill = guide_legend(order = 1),
+##            shape = guide_legend(order = 2)) +
+##     coord_flip() + theme(legend.position = "bottom", legend.direction = "vertical")
 
 
 
@@ -470,15 +473,15 @@ carsac_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
                                          group = decision:perspective)) +
     geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
     ylab("Confidence") +
-     geom_linerange(aes(ymin = confidence_signed - confidence_sd,
-                       ymax = confidence_signed + confidence_sd),
+     geom_errorbar(aes(ymin = confidence_signed - confidence_sd,
+                       ymax = confidence_signed + confidence_sd, width = 0.1),
                data = carsac.cont) +
     scale_x_discrete(name = "Perspective",
                      limits = rev(levels(carsac.cont$perspective)),
                      labels = c("Pedestrian", "Passenger", "Bystander")) +
         scale_y_continuous(limits = c(-110,110),
-                       sec.axis = sec_axis(~., name = "Relative frequency",
-                                           labels = c("100%", "50%", "0%", "50%", "100%")),
+                       sec.axis = sec_axis(~., name = "Relative frequency (%)",
+                                           labels = c("100", "50", "0", "50", "100")),
                        labels = c(100, 50, 0, 50, 100)) +
         geom_point(stat = "identity", aes(y = confidence_signed,
                                       group = decision:perspective,
@@ -501,48 +504,48 @@ carsac_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
 
 
 
-motorist_names <- c("self-driving" = "Self-driving car",
-                    "human" = "Human driver")
+## motorist_names <- c("self-driving" = "Self-driving car",
+##                     "human" = "Human driver")
 
-carsac_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
-                                         group = decision:perspective)) +
-    geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
-    ylab("Confidence") +
-        scale_x_discrete(name = "Perspective",
-                     limits = rev(levels(carsac.cont$perspective)),
-                     labels = c("Pedestrian", "Passenger", "Bystander")) +
-        scale_y_continuous(
-            limits = c(-110,110),
-            sec.axis = sec_axis(
-                ~., name = "Relative frequency",
-                labels = c("100%", "50%", "0%",
-                           "50%", "100%")),
-            labels = c(100, 50, 0, 50, 100)) +
-    stat_summary(fun.ymin = function(x) mean(x) - sd(x),
-               fun.ymax = function(x) mean(x) + sd(x),
-               geom = "linerange",
-               aes(y = confidence_signed, group = decision:perspective),
-               data = carsac.sub) +
-    stat_summary(fun.y = mean, geom = "point",
-                 aes(y = confidence_signed, color = decision),
-                 data = carsac.sub, size = 3) +
-    geom_hline(yintercept = 0, linetype = "dashed") +
-    scale_color_manual(values = c("black", "grey")) +
-    scale_shape_manual(values = c("c", "c"),
-                       name = "Mean (\u00B1SD) confidence in decision",
-                       limits = rev(levels(carsac.cont$decision)),
-                       labels = c("Endanger car occupants",
-                                  "Endanger pedestrians")) +
-    scale_fill_manual(values = c("#67a9cf","#ef8a62"),
-                      name = "Relative frequency of decision",
-                      limits = rev(levels(carsac.cont$decision)),
-                      labels = c("Endanger car occupants",
-                                 "Endanger pedestrians")) +
-    facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
-    guides(fill = guide_legend(order = 1),
-               shape = guide_legend(order = 2)) +
-    coord_flip() + theme(legend.position = "bottom",
-                         legend.direction = "vertical")
+## carsac_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
+##                                          group = decision:perspective)) +
+##     geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
+##     ylab("Confidence") +
+##         scale_x_discrete(name = "Perspective",
+##                      limits = rev(levels(carsac.cont$perspective)),
+##                      labels = c("Pedestrian", "Passenger", "Bystander")) +
+##         scale_y_continuous(
+##             limits = c(-110,110),
+##             sec.axis = sec_axis(
+##                 ~., name = "Relative frequency",
+##                 labels = c("100%", "50%", "0%",
+##                            "50%", "100%")),
+##             labels = c(100, 50, 0, 50, 100)) +
+##     stat_summary(fun.ymin = function(x) mean(x) - sd(x),
+##                fun.ymax = function(x) mean(x) + sd(x),
+##                geom = "linerange",
+##                aes(y = confidence_signed, group = decision:perspective),
+##                data = carsac.sub) +
+##     stat_summary(fun.y = mean, geom = "point",
+##                  aes(y = confidence_signed, color = decision),
+##                  data = carsac.sub, size = 3) +
+##     geom_hline(yintercept = 0, linetype = "dashed") +
+##     scale_color_manual(values = c("black", "grey")) +
+##     scale_shape_manual(values = c("c", "c"),
+##                        name = "Mean (\u00B1SD) confidence in decision",
+##                        limits = rev(levels(carsac.cont$decision)),
+##                        labels = c("Endanger car occupants",
+##                                   "Endanger pedestrians")) +
+##     scale_fill_manual(values = c("#67a9cf","#ef8a62"),
+##                       name = "Relative frequency of decision",
+##                       limits = rev(levels(carsac.cont$decision)),
+##                       labels = c("Endanger car occupants",
+##                                  "Endanger pedestrians")) +
+##     facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
+##     guides(fill = guide_legend(order = 1),
+##                shape = guide_legend(order = 2)) +
+##     coord_flip() + theme(legend.position = "bottom",
+##                          legend.direction = "vertical")
 
 carsac_raw.plot
 
@@ -679,16 +682,16 @@ sidewalk_raw.plot <- ggplot(sidewalk.cont, aes(x = perspective,
                                          group = decision:perspective)) +
     geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
     ylab("Confidence") +
-     geom_linerange(aes(ymin = confidence_signed - confidence_sd,
-                       ymax = confidence_signed + confidence_sd),
+     geom_errorbar(aes(ymin = confidence_signed - confidence_sd,
+                       ymax = confidence_signed + confidence_sd, width = 0.1),
                data = sidewalk.cont) +
     scale_x_discrete(name = "Perspective",
                      limits = rev(levels(sidewalk.cont$perspective)),
                      labels = c("Pedestrian\non road", "Pedestrian\non sidewalk",
                                 "Passenger", "Bystander")) +
         scale_y_continuous(limits = c(-110,110),
-                       sec.axis = sec_axis(~., name = "Relative frequency",
-                                           labels = c("100%", "50%", "0%", "50%", "100%")),
+                       sec.axis = sec_axis(~., name = "Relative frequency (%)",
+                                           labels = c("100", "50", "0", "50", "100")),
                        labels = c(100, 50, 0, 50, 100)) +
         geom_point(stat = "identity", aes(y = confidence_signed,
                                       group = decision:perspective,
