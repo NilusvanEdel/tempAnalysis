@@ -16,6 +16,8 @@ require(multcomp)
 require(vcdExtra)
 require(catspec)
 
+carsac.data <- read.csv("vr_data/sidewalkCSV.csv")
+
 # sidewalk
 # rename gender variable
 colnames(sidewalk.data)[2] <- "gender"
