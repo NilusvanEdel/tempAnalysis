@@ -91,10 +91,20 @@ sidewalk.sub$perceivedIden <- factor(sidewalk.sub$perceivedIden,
 (nc <- detectCores())
 cl <- makeCluster(rep("localhost", nc))
 
-sidewalk_glmm <- mixed(decision ~ perspective + motorist +
+
+sidewalk_glmm_base <- mixed(decision ~ perspective + motorist +
+                              perspective:motorist + trial +
+                              (1 | participant.ID),
+                          method = "PB",
+                          family = "binomial", data = sidewalk.sub,
+                          args_test = list(nsim = 1000, cl = cl), cl = cl,
+                          control = glmerControl(optimizer = "bobyqa",
+                                                 optCtrl = list(maxfun = 2e5)))
+
+sidewalk_glmm_cov <- mixed(decision ~ perspective + motorist +
                         perspective:motorist +
                         trial + gender + age_c + opinAV +
-                        education +  visImpairment +
+                        education +  drivExperience + visImpairment +
                         perceivedIden +
                         (1 | participant.ID),
                     method = "PB", # change to PB for final
@@ -107,19 +117,19 @@ stopCluster(cl)
 
 
 sidewalk_glmm.resid <- simulateResiduals(
-    fittedModel = sidewalk_glmm$full_model, n = 2000)
+    fittedModel = sidewalk_glmm_cov$full_model, n = 2000)
 sidewalk_glmm_resid.plot <- plotSimulatedResiduals(
     simulationOutput = sidewalk_glmm.resid)
 
 
-emm_sidewalk_i <- emmeans(sidewalk_glmm, pairwise ~ perspective | motorist,
+emm_sidewalk_i <- emmeans(sidewalk_glmm_cov, pairwise ~ perspective | motorist,
                           type = 'response')
 
-emm_sidewalk_persp <- emmeans(sidewalk_glmm, pairwise ~ perspective,
+emm_sidewalk_persp <- emmeans(sidewalk_glmm_cov, pairwise ~ perspective,
                               type = 'response')
 
 
-emm_sidewalk_motorist <- emmeans(sidewalk_glmm, pairwise ~ motorist,
+emm_sidewalk_motorist <- emmeans(sidewalk_glmm_cov, pairwise ~ motorist,
                                  type = 'response')
 
-save.image(file = "vr_sidewalk_glmm.RData")
+save.image(file = "vr_sidewalk_glmm_v2.RData")

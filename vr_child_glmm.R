@@ -91,10 +91,21 @@ child.sub$perceivedIden <- factor(child.sub$perceivedIden,
 (nc <- detectCores())
 cl <- makeCluster(rep("localhost", nc))
 
-child_glmm <- mixed(decision ~ perspective * motorist +
-                        trial + gender +
-                        opinAV + education + visImpairment +
-                        drivExperience +  perceivedIden + age_c +
+child_glmm_base<- mixed(decision ~ perspective + motorist +
+                        perspective:motorist + trial +
+                        (1 | participant.ID),
+                    method = "PB", # change to PB for final
+                    family = "binomial", data = child.sub,
+                    args_test = list(nsim = 1000, cl = cl), cl = cl,
+                    control = glmerControl(optimizer = "bobyqa",
+                                           optCtrl = list(maxfun = 2e5)))
+
+
+child_glmm_cov <- mixed(decision ~ perspective + motorist +
+                        perspective:motorist +
+                        trial + gender + age_c + opinAV +
+                        education +  drivExperience + visImpairment +
+                        perceivedIden +
                         (1 | participant.ID),
                     method = "PB", # change to PB for final
                     family = "binomial", data = child.sub,
@@ -105,20 +116,20 @@ child_glmm <- mixed(decision ~ perspective * motorist +
 stopCluster(cl)
 
 child_glmm.resid <- simulateResiduals(
-    fittedModel = child_glmm$full_model,
+    fittedModel = child_glmm_cov$full_model,
     n = 2000)
 
 child_glmm_resid.plot <- plotSimulatedResiduals(
     simulationOutput = child_glmm.resid)
 
-emm_child_i <- emmeans(child_glmm, ~ perspective | motorist,
+emm_child_i <- emmeans(child_glmm_cov, ~ perspective | motorist,
                        type = "response",
                        contr = "pairwise")
 
-emm_child_persp <- emmeans(child_glmm, pairwise ~ perspective,
+emm_child_persp <- emmeans(child_glmm_cov, pairwise ~ perspective,
                            type = 'response')
 
-emm_child_motorist <- emmeans(child_glmm, pairwise ~ motorist,
+emm_child_motorist <- emmeans(child_glmm_cov, pairwise ~ motorist,
                               type = 'response')
 
 

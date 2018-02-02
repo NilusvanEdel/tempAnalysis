@@ -89,12 +89,21 @@ carsac.sub$perspective <- combineLevels(
     levs=c("PedLarge", "PedSmall"),
     newLabel = "Pedestrian")
 
+carsac.sub$age_c <- scale(carsac.sub$age)
+
 (nc <- detectCores())
 cl <- makeCluster(rep("localhost", nc))
 
-carsac.sub$age_c <- scale(carsac.sub$age)
+carsac_glmm_base <- mixed(decision ~ perspective + motorist +
+                              perspective:motorist + trial +
+                              (1 | participant.ID),
+                          method = "PB",
+                          family = "binomial", data = carsac.sub,
+                          args_test = list(nsim = 1000, cl = cl), cl = cl,
+                          control = glmerControl(optimizer = "bobyqa",
+                                                 optCtrl = list(maxfun = 2e5)))
 
-carsac_glmm <- mixed(decision ~ perspective + motorist +
+carsac_glmm_cov <- mixed(decision ~ perspective + motorist +
                         perspective:motorist +
                         trial + gender + age_c + opinAV +
                         education +  drivExperience + visImpairment +
@@ -109,19 +118,19 @@ carsac_glmm <- mixed(decision ~ perspective + motorist +
 stopCluster(cl)
 
 carsac_glmm.resid <- simulateResiduals(
-    fittedModel = carsac_glmm$full_model, n = 2000)
+    fittedModel = carsac_glmm_cov$full_model, n = 2000)
 carsac_glmm_resid.plot <- plotSimulatedResiduals(
     simulationOutput = carsac_glmm.resid)
 
 
-emm_carsac_i <- emmeans(carsac_glmm, pairwise ~ perspective | motorist,
+emm_carsac_i <- emmeans(carsac_glmm_cov, pairwise ~ perspective | motorist,
                         type = 'response')
 
-emm_carsac_persp <- emmeans(carsac_glmm, pairwise ~ perspective,
+emm_carsac_persp <- emmeans(carsac_glmm_cov, pairwise ~ perspective,
                             type = 'response')
 
-emm_carsac_motorist <- emmeans(carsac_glmm, pairwise ~ motorist,
+emm_carsac_motorist <- emmeans(carsac_glmm_cov, pairwise ~ motorist,
                                type = 'response')
 
 
-save.image(file = "vr_carsac_glmm.RData")
+save.image(file = "vr_carsac_glmm_v2.RData")
