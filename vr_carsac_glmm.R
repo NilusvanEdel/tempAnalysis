@@ -43,6 +43,29 @@ carsac.sub$participant.ID <- droplevels(carsac.sub$participant.ID)
 
 carsac.sub$age_c <- scale(carsac.sub$age)
 
+
+
+carsac.sub$opinAV <- ordered(carsac.sub$opinAV,
+                            levels = c("Sehr negativ",
+                                       "Negativ",
+                                       "Neutral",
+                                       "Positiv",
+                                       "Sehr positiv"))
+
+carsac.sub$education <- ordered(carsac.sub$education,
+                               levels = c("keinen Hocschulabschluss",
+                                          "Hochschulabschluss (Bachelor, Vordiplom,etc.)",
+                                          "Hochschulabschluss (Master, Diplom, oder höher)"))
+
+
+
+carsac.sub$drivExperience <- ordered(carsac.sub$drivExperience,
+                                    levels = c("Ich fahre nicht Auto",
+                                               "1-5 Jahre",
+                                               "5-10",
+                                               "10+"))
+
+
 carsac.sub$perceivedIden <- factor(carsac.sub$perceivedIden,
                                    levels = c("Beobachter",
                                               "Mitfahrer",

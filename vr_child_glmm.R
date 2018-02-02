@@ -56,7 +56,23 @@ child.sub$perspective <- factor(child.sub$perspective,
 
 child.sub$age_c <- scale(child.sub$age)
 
-# set variables to correct type
+                                        # set variables to correct type
+
+
+child.sub$opinAV <- ordered(child.sub$opinAV,
+                            levels = c("Sehr negativ",
+                                       "Negativ",
+                                       "Neutral",
+                                       "Positiv",
+                                       "Sehr positiv"))
+
+child.sub$education <- ordered(child.sub$education,
+                               levels = c("keinen Hocschulabschluss",
+                                          "Hochschulabschluss (Bachelor, Vordiplom,etc.)",
+                                          "Hochschulabschluss (Master, Diplom, oder höher)"))
+
+
+
 child.sub$drivExperience <- ordered(child.sub$drivExperience,
                                     levels = c("Ich fahre nicht Auto",
                                                "1-5 Jahre",

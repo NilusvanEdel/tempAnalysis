@@ -43,6 +43,30 @@ sidewalk.sub <- subset(sidewalk.data,
 sidewalk.sub$participant.ID <- droplevels(sidewalk.sub$participant.ID)
 
 
+sidewalk.sub$opinAV <- ordered(sidewalk.sub$opinAV,
+                            levels = c("Sehr negativ",
+                                       "Negativ",
+                                       "Neutral",
+                                       "Positiv",
+                                       "Sehr positiv"))
+
+sidewalk.sub$education <- ordered(sidewalk.sub$education,
+                               levels = c("keinen Hocschulabschluss",
+                                          "Hochschulabschluss (Bachelor, Vordiplom,etc.)",
+                                          "Hochschulabschluss (Master, Diplom, oder höher)"))
+
+
+
+sidewalk.sub$drivExperience <- ordered(sidewalk.sub$drivExperience,
+                                    levels = c("Ich fahre nicht Auto",
+                                               "1-5 Jahre",
+                                               "5-10",
+                                               "10+"))
+
+
+
+
+
 sidewalk.sub$perspective <- factor(sidewalk.sub$perspective,
                                       levels = c("Observer",
                                                  "Passenger",
