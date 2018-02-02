@@ -70,7 +70,7 @@ cl <- makeCluster(rep("localhost", nc))
 sidewalk_glmm <- mixed(decision ~ perspective + motorist +
                         perspective:motorist +
                         trial + gender + age_c + opinAV +
-                        education +  drivExperience + visImpairment +
+                        education +  visImpairment +
                         perceivedIden +
                         (1 | participant.ID),
                     method = "PB", # change to PB for final
