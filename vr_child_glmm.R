@@ -56,6 +56,13 @@ child.sub$perspective <- factor(child.sub$perspective,
 
 child.sub$age_c <- scale(child.sub$age)
 
+# set variables to correct type
+child.sub$drivExperience <- ordered(child.sub$drivExperience,
+                                    levels = c("Ich fahre nicht Auto",
+                                               "1-5 Jahre",
+                                               "5-10",
+                                               "10+"))
+
 child.sub$perceivedIden <- factor(child.sub$perceivedIden,
                                    levels = c("Beobachter",
                                               "Mitfahrer",
