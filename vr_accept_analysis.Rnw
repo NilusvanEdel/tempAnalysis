@@ -86,6 +86,31 @@ child.sub <- subset(child.data, child.data$passedSanCheck == "True" &
 child.sub$participant.ID <- droplevels(child.sub$participant.ID)
 
 
+
+# set variables to correct type
+
+child.sub$opinAV <- ordered(child.sub$opinAV,
+                            levels = c("Sehr negativ",
+                                       "Negativ",
+                                       "Neutral",
+                                       "Positiv",
+                                       "Sehr positiv"))
+
+child.sub$education <- ordered(child.sub$education,
+                               levels = c("keinen Hocschulabschluss",
+                                          "Hochschulabschluss (Bachelor, Vordiplom,etc.)",
+                                          "Hochschulabschluss (Master, Diplom, oder höher)"))
+
+
+
+child.sub$drivExperience <- ordered(child.sub$drivExperience,
+                                    levels = c("Ich fahre nicht Auto",
+                                               "1-5 Jahre",
+                                               "5-10",
+                                               "10+"))
+
+
+
 # reorder perspective levels
 child.sub$perspective <- factor(child.sub$perspective,
                                 levels = c("Observer",
@@ -158,6 +183,27 @@ carsac.sub$perspective <- combineLevels(
     newLabel = "Pedestrian")
 
 
+carsac.sub$opinAV <- ordered(carsac.sub$opinAV,
+                            levels = c("Sehr negativ",
+                                       "Negativ",
+                                       "Neutral",
+                                       "Positiv",
+                                       "Sehr positiv"))
+
+carsac.sub$education <- ordered(carsac.sub$education,
+                               levels = c("keinen Hocschulabschluss",
+                                          "Hochschulabschluss (Bachelor, Vordiplom,etc.)",
+                                          "Hochschulabschluss (Master, Diplom, oder höher)"))
+
+
+
+carsac.sub$drivExperience <- ordered(carsac.sub$drivExperience,
+                                    levels = c("Ich fahre nicht Auto",
+                                               "1-5 Jahre",
+                                               "5-10",
+                                               "10+"))
+
+
 # sidewalk
 # rename gender variable
 colnames(sidewalk.data)[2] <- "gender"
@@ -203,6 +249,28 @@ sidewalk.sub$perceivedIden <- factor(sidewalk.sub$perceivedIden,
                                               "Passenger",
                                               "Pedestrian"))
 
+
+sidewalk.sub$opinAV <- ordered(sidewalk.sub$opinAV,
+                            levels = c("Sehr negativ",
+                                       "Negativ",
+                                       "Neutral",
+                                       "Positiv",
+                                       "Sehr positiv"))
+
+sidewalk.sub$education <- ordered(sidewalk.sub$education,
+                               levels = c("keinen Hocschulabschluss",
+                                          "Hochschulabschluss (Bachelor, Vordiplom,etc.)",
+                                          "Hochschulabschluss (Master, Diplom, oder höher)"))
+
+
+
+sidewalk.sub$drivExperience <- ordered(sidewalk.sub$drivExperience,
+                                    levels = c("Ich fahre nicht Auto",
+                                               "1-5 Jahre",
+                                               "5-10",
+                                               "10+"))
+
+
 @
 
 \section{Manipulation check}
@@ -233,7 +301,7 @@ Then we compute the test statistic.
 
 <<manip-check-chisq>>=
 manip_check.chisq <- chisq.test(manip_check.xtab,
-                                simulate.p.value = TRUE)
+                                simulate.p.value = FALSE)
 manip_check.chisq
 @
 
@@ -303,7 +371,7 @@ child_raw.plot <- ggplot(child.cont, aes(x = perspective,
                      labels = c("Pedestrian\nwith adults",
                                 "Pedestrian\nwith children",
                                 "Passenger", "Bystander")) +
-    scale_y_continuous(limits = c(-102,102),
+    scale_y_continuous(limits = c(-110,110),
                        sec.axis = sec_axis(
                            ~., name = "Relative frequency (%)",
                            labels = c("100", "50", "0", "50", "100")),
@@ -350,17 +418,27 @@ We run a logit mixed model to predict the decision of the participants.
 (nc <- detectCores())
 cl <- makeCluster(rep("localhost", nc))
 
-child_glmm <- mixed(decision ~ perspective * motorist +
-                        trial + gender +
-                        opinAV + education +
-                        drivExperience + perceivedIden + age_c +
+child_glmm_base<- mixed(decision ~ perspective * motorist +
+                        trial +
                         (1 | participant.ID),
-                    method = "PB", # change to PB for final
+                    method = "LRT", # change to PB for final
                     family = "binomial", data = child.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
                                            optCtrl = list(maxfun = 2e5)))
 
+
+child_glmm <- mixed(decision ~ perspective + motorist +
+                        perspective:motorist +
+                        trial + gender + age_c + opinAV +
+                        education +  drivExperience + visImpairment +
+                        perceivedIden +
+                        (1 | participant.ID),
+                    method = "LRT", # change to PB for final
+                    family = "binomial", data = child.sub,
+                    args_test = list(nsim = 1000, cl = cl), cl = cl,
+                    control = glmerControl(optimizer = "bobyqa",
+                                           optCtrl = list(maxfun = 2e5)))
 stopCluster(cl)
 
 child_glmm_anova <- child_glmm$anova_table
@@ -425,10 +503,10 @@ xtable(emm_child_motorist$contrasts)
 cl <- makeCluster(rep("localhost", nc))
 child_conf_lmm<- mixed(confidence ~ perspective * motorist * decision +
                         trial + gender +
-                        opinAV + education +
+                        opinAV + education + visImpairment +
                         drivExperience + perceivedIden + age_c +
                         (1 | participant.ID),
-                    method = "KR", # change to PB for final
+                    method = "S", # change to PB for final
                     data = child.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl)
 
@@ -580,15 +658,12 @@ carsac_raw.plot
 (nc <- detectCores())
 cl <- makeCluster(rep("localhost", nc))
 
-carsac.sub$age_c <- scale(carsac.sub$age)
-
-carsac_glmm <- mixed(decision ~ perspective + motorist +
-                        perspective:motorist +
-                        trial + gender + age_c + opinAV +
-                        education +  drivExperience + visImpairment +
-                        perceivedIden +
+carsac_glmm <- mixed(decision ~ perspective * motorist +
+                        trial + gender +
+                        opinAV + education + visImpairment +
+                        drivExperience +  perceivedIden + age_c +
                         (1 | participant.ID),
-                    method = "PB", # change to PB for final
+                    method = "LRT", # change to PB for final
                     family = "binomial", data = carsac.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
@@ -787,7 +862,7 @@ sidewalk_raw.plot
 
 \label{sec:sidewalk-glmm}
 <<sidewalk-glmm,results='asis'>>=
-sidewalk.sub$age_c <- scale(sidewalk.sub$age)
+
 
 (nc <- detectCores())
 cl <- makeCluster(rep("localhost", nc))
@@ -798,7 +873,7 @@ sidewalk_glmm <- mixed(decision ~ perspective + motorist +
                         education +  drivExperience + visImpairment +
                         perceivedIden +
                         (1 | participant.ID),
-                    method = "PB", # change to PB for final
+                    method = "LRT", # change to PB for final
                     family = "binomial", data = sidewalk.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl,
                     control = glmerControl(optimizer = "bobyqa",
