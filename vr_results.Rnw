@@ -8,6 +8,7 @@
 \usepackage{dcolumn}
 \usepackage{booktabs}
 \usepackage{graphicx}
+\usepackage{float}
 
 \begin{document}
 \pagenumbering{gobble}
@@ -16,25 +17,24 @@
 \pagenumbering{arabic}
 
 <<load-data,echo=FALSE,messages=FALSE,warnings=FALSE>>=
-load("vr_accept.RData")
 @
 
 \section{Results}
-\subsection{Descriptive statistics of groups}
-TODO: add a table with 8 columns that has all the covariate values per
-group
+% \subsection{Descriptive statistics of groups}
+% TODO: add a table with 8 columns that has all the covariate values per
+% group
 
-\begin{table}[ht]
-  \begin{tabular}{lllllllll}
-    &Bystander&Passenger&Pedestrian small&Pedestrian large&Bystander&Passenger&Pedestrian small&Pedestrian large \\
-    Age (\(M, SD\)) &23.57 (4.41) & 21.87 (3.31) & 23.35 (6.12) & 23.04 (2.99) & 23.30 (3.72)  & 21.70 (2.36) &  22.43 (2.36) & 24.26 (6.08) \\
-    Gender (male:female) &12:11&12:11&12:11&12:11&12:11&12:11&12:11&12:11 \\
-    Driving experience&&&&&&& \\
-    education&&&&&&& \\
-    opinion of self-driving cars&2.87 (1.22)&3.04 (1.33)&3.13 (1.49)&3.09 (1.41)&2.65 (1.40)&3.00 (1.38)&2.78 (1.57) & 2.43 (1.27) \\
-    visual impairment&&&&&&& \\
-  \end{tabular}
-\end{table}
+% \begin{table}[H]
+%   \begin{tabular}{lllllllll}
+%     &Bystander&Passenger&Pedestrian small&Pedestrian large&Bystander&Passenger&Pedestrian small&Pedestrian large \\
+%     Age (\(M, SD\)) &23.57 (4.41) & 21.87 (3.31) & 23.35 (6.12) & 23.04 (2.99) & 23.30 (3.72)  & 21.70 (2.36) &  22.43 (2.36) & 24.26 (6.08) \\
+%     Gender (male:female) &12:11&12:11&12:11&12:11&12:11&12:11&12:11&12:11 \\
+%     Driving experience&&&&&&& \\
+%     education&&&&&&& \\
+%     opinion of self-driving cars&2.87 (1.22)&3.04 (1.33)&3.13 (1.49)&3.09 (1.41)&2.65 (1.40)&3.00 (1.38)&2.78 (1.57) & 2.43 (1.27) \\
+%     visual impairment&&&&&&& \\
+%   \end{tabular}
+% \end{table}
 
 \subsection{Manipulation check}
 \label{sec:manip-check}
@@ -45,7 +45,7 @@ experienced in affected which party participants identified with, we
 used Pearson's \(\chi^2\) test on the contingency table shown in
 Table~\ref{tab:manip-check}.
 
-\begin{table}[ht]
+\begin{table}[H]
   \centering
   \begin{tabular}{llD{.}{.}{0}D{.}{.}{0}D{.}{.}{0}}
     \toprule
@@ -62,14 +62,15 @@ Table~\ref{tab:manip-check}.
     \label{tab:manip-check}
 \end{table}
 
-The omnibus test was significant, \(\chi^2(4) = 114.11, p < .0001\).
-Follow up comparisons using Bonferroni adjustment showed all three
-perspective groups had significantly different trends of responses
-from each other (all \(p < .0001\)).  The majority of participants
-identified most strongly with the perspective from which they
-experienced the dilemmas. However, because 33.70\% of participants did
-not idenitify with their corresponding perspectives, identification
-was included as one of the covariates in the following analyses.
+The omnibus test was significant,
+\(\chi^2(4, N = 184) = 114.11, p < .0001\).  Follow up comparisons
+using Bonferroni adjustment showed all three perspective groups had
+significantly different patterns of responses from each other (all
+\(p < .0001\)).  The majority of participants identified most strongly
+with the perspective from which they experienced the
+dilemmas. However, because 33.70\% of participants did not idenitify
+with their corresponding perspectives, identification was included as
+one of the covariates in the following analyses.
 
 \subsection{Dilemmas}
 
@@ -94,7 +95,7 @@ by-participant intercepts were included in all models.
 
 \begin{figure}
 
-\includegraphics[width=\textwidth]{figure/child-cropped}
+%\includegraphics[width=\textwidth]{figure/child-cropped}
 \caption{Responses to the children versus adults dilemmas.}
   \label{fig:child-plot}
 \end{figure}
@@ -108,44 +109,86 @@ exact binomial test showed this to be significantly greater than 50\%,
 judgements and levels of confidence separated by condition.
 
 \paragraph{Judgements}
-There were no significant effects of perspective or motorist on the
-judgements in the child versus adults dilemmas.
+There were no significant effects of perspective or motorist on
+judgements in the child versus adults dilemmas in either the base
+model (Table~\ref{tab:child-judge-base}) or the model with covariates
+(Table~\ref{tab:child-judge-cov}).
 
-\paragraph{Confidence in judgements}
-There were no differences in significant effects between the base
-model (Table \ref{tab:child-conf-base}) and the model with covariates
-(Table \ref{tab:child-conf-cov}), thus all discussed effects refer to
-the model with covariates. As shown in Table~\ref{tab:child-conf-cov},
-there was a significant main effect of perspective (\(p = .0007\))
-moderated by decision (\(p = .0301\)).  Tukey adjusted follow-up
-contrasts of estimated marginal means
-(Table~\ref{tab:child-conf-followup}) showed that within those who
-chose endangering adults as more acceptable, participants in the
-bystander perspective had significantly lower confidence in their
-choice (\(EMM = 35.86\)) than either the pedestrian with children
-(\(EMM = 58.57\)) or the pedestrian with adults (\(EMM = 55.62\))
-perspectives, \(p = .0178, p = .0358\), respectively. Within those who
-chose endangering children as more acceptable, participants in the
-pedestrian with children perspective had significantly higher
-confidence (\(EMM = 71.87\)) than either the bystander
-(\(EMM = 36.13\)), the passenger (\(EMM = 41.92\)) or the pedestrian
-with adults (\(EMM = 42.34\)), \(p = 0.0003, p = 0.0161, p = 0.0045\),
-respectively.
-
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \begin{tabular}{lrrrr}
   \hline
- & num Df & den Df & F & P value \\
+  & \(\chi^2\) & \(df\) & \(p\) \\
   \hline
-perspective & 3 & 182 & 6.32 & 0.0004 \\
-  motorist & 1 & 182 & 1.33 & 0.2498 \\
-  judgement & 1 & 340 & 0.16 & 0.6852 \\
-  trial & 1 & 180 & 0.26 & 0.6122 \\
-  perspective \(\times\) motorist & 3 & 182 & 0.56 & 0.6388 \\
-  perspective \(\times\) judgement & 3 & 334 & 2.93 & 0.0335 \\
-  motorist \(\times\) judgement & 1 & 340 & 1.46 & 0.2272 \\
-  perspective \(\times\) motorist \(\times\) judgement & 3 & 335 & 2.33 & 0.0738 \\
+  perspective & 2.54 & 3 & .5522 \\
+  motorist & 4.06 & 1 &  .0843 \\
+  trial & 1.15 & 1 &  .3011 \\
+  perspective \(\times\) motorist & 0.62 & 3 & .9208 \\
+  \hline
+\end{tabular}
+\caption{ANOVA table for base judgements model (children versus adults)}
+\label{tab:child-judge-base}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+  \hline
+  & \(\chi^2\) & \(df\) & \(p\) \\
+  \hline
+  perspective & 1.79 & 3 & .6931 \\
+  motorist & 3.56 & 1 & .1049 \\
+  trial & 1.22 & 1 & .2908 \\
+  gender & 0.62 & 1 & .4644 \\
+  age & 0.36 & 1 & .6114 \\
+  opinion of self-driving cars & 11.42 & 4 & .0491 \\
+  education & 4.49 & 2 & .1765 \\
+  driving experience & 5.64 & 3 & .2166 \\
+  visual impairment & 6.09 & 2 & .0833 \\
+  identification & 0.11 & 2 & .9529 \\
+  perspective \(\times\) motorist & 1.64 & 3 & .7192 \\
+  \hline
+\end{tabular}
+\caption{ANOVA table for covariate judgements model (children versus
+  adults)}
+\label{tab:child-judge-cov}
+\end{table}
+
+
+\paragraph{Confidence in judgements}
+Both the base model (Table \ref{tab:child-conf-base}) and the model
+with covariates (Table \ref{tab:child-conf-cov}) showed the same
+significant effects, thus all discussed effects refer to the model
+with covariates. As shown in Table~\ref{tab:child-conf-cov}, there was
+a significant main effect of perspective (\(p = .0007\)) moderated by
+decision (\(p = .0301\)).  Tukey adjusted follow-up contrasts of
+estimated marginal means (Table~\ref{tab:child-conf-followup}) showed
+that within those who chose endangering adults as more acceptable,
+participants in the bystander perspective had significantly lower
+confidence in their choice (\(EMM = 35.86\)) than either the
+pedestrian with children (\(EMM = 58.57\)) or the pedestrian with
+adults (\(EMM = 55.62\)) perspectives, \(p = .0178, p = .0358\),
+respectively. Within those who chose endangering children as more
+acceptable, participants in the pedestrian with children perspective
+had significantly higher confidence (\(EMM = 71.87\)) than either the
+bystander (\(EMM = 36.13\)), the passenger (\(EMM = 41.92\)) or the
+pedestrian with adults (\(EMM = 42.34\)),
+\(p = .0003, p = .0161, p = .0045\), respectively.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+  \hline
+ & num \(df\) & den \(df\) & \(F\) & \(p\) \\
+  \hline
+perspective & 3 & 182 & 6.32 & .0004 \\
+  motorist & 1 & 182 & 1.33 & .2498 \\
+  judgement & 1 & 340 & 0.16 & .6852 \\
+  trial & 1 & 180 & 0.26 & .6122 \\
+  perspective \(\times\) motorist & 3 & 182 & 0.56 & .6388 \\
+  perspective \(\times\) judgement & 3 & 334 & 2.93 & .0335 \\
+  motorist \(\times\) judgement & 1 & 340 & 1.46 & .2272 \\
+  perspective \(\times\) motorist \(\times\) judgement & 3 & 335 & 2.33 & .0738 \\
    \hline
 \end{tabular}
 \caption{ANOVA table for confidence model excluding covariates
@@ -153,27 +196,27 @@ perspective & 3 & 182 & 6.32 & 0.0004 \\
 \label{tab:child-conf-base}
 \end{table}
 
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \begin{tabular}{lrrrr}
   \hline
- & num Df & den Df & F & Pr($>$F) \\
+ & num \(df\) & den \(df\) & \(F\) & \(p\) \\
   \hline
-perspective & 3 & 168 & 5.92 & 0.0007 \\
-  motorist & 1 & 167 & 1.35 & 0.2476 \\
-  judgement & 1 & 324 & 0.11 & 0.7383 \\
-  trial & 1 & 180 & 0.24 & 0.6224 \\
-  gender & 1 & 162 & 0.04 & 0.8437 \\
-  opinion of self-driving cars & 4 & 159 & 0.56 & 0.6938 \\
-  education & 2 & 162 & 0.09 & 0.9149 \\
-  visImpairment & 2 & 161 & 0.55 & 0.5793 \\
-  drivExperience & 3 & 159 & 0.34 & 0.7996 \\
-  perceivedIden & 2 & 160 & 1.06 & 0.3474 \\
-  age & 1 & 157 & 2.17 & 0.1424 \\
-  perspective \(\times\) motorist & 3 & 167 & 0.45 & 0.7148 \\
-  perspective \(\times\) judgement & 3 & 319 & 3.02 & 0.0301 \\
-  motorist \(\times\) judgement & 1 & 327 & 1.44 & 0.2309 \\
-  perspective \(\times\) motorist \(\times\) judgement & 3 & 318 & 2.15 & 0.0934 \\
+perspective & 3 & 168 & 5.92 & .0007 \\
+  motorist & 1 & 167 & 1.35 & .2476 \\
+  judgement & 1 & 324 & 0.11 & .7383 \\
+  trial & 1 & 180 & 0.24 & .6224 \\
+  gender & 1 & 162 & 0.04 & .8437 \\
+  opinion of self-driving cars & 4 & 159 & 0.56 & .6938 \\
+  education & 2 & 162 & 0.09 & .9149 \\
+  visual impairment & 2 & 161 & 0.55 & .5793 \\
+  driving experience & 3 & 159 & 0.34 & .7996 \\
+  identification & 2 & 160 & 1.06 & .3474 \\
+  age & 1 & 157 & 2.17 & .1424 \\
+  perspective \(\times\) motorist & 3 & 167 & 0.45 & .7148 \\
+  perspective \(\times\) judgement & 3 & 319 & 3.02 & .0301 \\
+  motorist \(\times\) judgement & 1 & 327 & 1.44 & .2309 \\
+  perspective \(\times\) motorist \(\times\) judgement & 3 & 318 & 2.15 & .0934 \\
    \hline
 \end{tabular}
 \caption{ANOVA table for confidence model including covariates (children versus adults
@@ -181,28 +224,28 @@ perspective & 3 & 168 & 5.92 & 0.0007 \\
   \label{tab:child-conf-cov}
 \end{table}
 
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \begin{tabular}{lrrrrl}
   \hline
-contrast & estimate & SE & df & t.ratio & p.value \\
+  contrast & estimate & \(SE\) & \(df\) & \(t\) ratio & \(p\) \\
   \hline
-\multicolumn{6}{l}{judgement = endanger adult pedestrians}\\
-Bystander - Passenger & -10.5955 & 8.0858 & 189.23 & -1.310 & 0.5575 \\
-  Bystander - Pedestrian with children & -22.7044 & 7.6623 & 200.75 & -2.963 & 0.0178 \\
-  Bystander - Pedestrian with adults & -19.7577 & 7.2709 & 198.06 & -2.717 & 0.0358 \\
-  Passenger - Pedestrian with children & -12.1088 & 8.8586 & 189.21 & -1.367 & 0.5217 \\
-  Passenger - Pedestrian with adults & -9.1621 & 8.6383 & 179.34 & -1.061 & 0.7139 \\
-  Pedestrian with children - Pedestrian with adults & 2.9467 & 6.9364 & 199.14 & 0.425 & 0.9742 \\
-   \hline
-\multicolumn{6}{l}{judgement = endanger child pedestrians}\\
-Bystander - Passenger & -5.7888 & 9.4702 & 251.28 & -0.611 & 0.9284 \\
-  Bystander - Pedestrian with children & -35.7422 & 8.7416 & 256.72 & -4.089 & 0.0003 \\
-  Bystander - Pedestrian with adults & -6.2128 & 8.7339 & 274.70 & -0.711 & 0.8926 \\
-  Passenger - Pedestrian with children & -29.9534 & 10.0063 & 227.23 & -2.993 & 0.0161 \\
+  \multicolumn{6}{l}{judgement = endanger adult pedestrians}\\
+  Bystander - Passenger & -10.5955 & 8.0858 & 189.23 & -1.310 & .5575 \\
+  Bystander - Pedestrian with children & -22.7044 & 7.6623 & 200.75 & -2.963 & .0178 \\
+  Bystander - Pedestrian with adults & -19.7577 & 7.2709 & 198.06 & -2.717 & .0358 \\
+  Passenger - Pedestrian with children & -12.1088 & 8.8586 & 189.21 & -1.367 & .5217 \\
+  Passenger - Pedestrian with adults & -9.1621 & 8.6383 & 179.34 & -1.061 & .7139 \\
+  Pedestrian with children - Pedestrian with adults & 2.9467 & 6.9364 & 199.14 & 0.425 & .9742 \\
+  \hline
+  \multicolumn{6}{l}{judgement = endanger child pedestrians}\\
+  Bystander - Passenger & -5.7888 & 9.4702 & 251.28 & -0.611 & .9284 \\
+  Bystander - Pedestrian with children & -35.7422 & 8.7416 & 256.72 & -4.089 & .0003 \\
+  Bystander - Pedestrian with adults & -6.2128 & 8.7339 & 274.70 & -0.711 & .8926 \\
+  Passenger - Pedestrian with children & -29.9534 & 10.0063 & 227.23 & -2.993 & .0161 \\
   Passenger - Pedestrian with adults & -0.4240 & 10.4678 & 249.87 & -0.041 & 1.0000 \\
-  Pedestrian with children - Pedestrian with adults & 29.5293 & 8.7288 & 282.93 & 3.383 & 0.0045 \\
-   \hline
+  Pedestrian with children - Pedestrian with adults & 29.5293 & 8.7288 & 282.93 & 3.383 & .0045 \\
+  \hline
 
 \multicolumn{6}{l}{{\footnotesize P value adjustment: tukey method for comparing a family of 4 estimates}}\\
 \end{tabular}
@@ -215,7 +258,7 @@ Bystander - Passenger & -5.7888 & 9.4702 & 251.28 & -0.611 & 0.9284 \\
 \label{sec:sidewalk}
 
 Overall, endangering the smaller group of pedestrians, who were
-standing on the sidewalk, was more considered more acceptable than
+standing on the sidewalk, was considered more acceptable than
 endangering the larger group of pedestrians, who were standing on the
 road, in 72.28\% of trials. An exact binomial test showed this to be
 significantly greater than 50\%, \(p < .0001\). Mean confidence (on a
@@ -223,39 +266,112 @@ significantly greater than 50\%, \(p < .0001\). Mean confidence (on a
 Figure~\ref{fig:sidewalk-plot} shows the responses to the road versus
 sidewalk dilemmas grouped by condition.
 
-\begin{figure}
-  \includegraphics[width=\textwidth]{figure/sidewalk-cropped}
+\begin{figure}[H]
+%  \includegraphics[width=\textwidth]{figure/sidewalk-cropped}
   \caption{Responses to the road versus sidewalk dilemmas.}
     \label{fig:sidewalk-plot}
 \end{figure}
 
 \paragraph{Judgements}
-TODO
 
-\paragraph{Confidence in Judgements}
+In the base model, there were sigificant main effects of perspective
+(\(p = .0163\)) and motorist (\(p = .0367\)), and a perspective
+\(\times\) motorist interaction (\(p = .0121\)) and a marginally
+significant effect of trial (\(p = .0576\)). However, in the model
+with covariates, only the main effect of perspective (\(p = .0071\))
+and trial (\(p = .025\)) were significant. Follow-up comparisons were
+conducted on the model with covariates
+(Table~\ref{tab:sidewalk-judge-persp-followup}). The probability of
+choosing staying on the road to be more acceptable was significantly
+higher in the pedestrian on the sidewalk perspective (\(EMM = 0.08\)
+than the passenger perspective (\(EMM = 0.0004\)), odds-ratio
+\(= 215.80, p = .0264\).
 
-The base model of confidence (Table \ref{tab:sidewalk-conf-base}), showed only
-a marginally significant effect of decision, however this effect was
-significant in the model including the covariates
-(Table~\ref{tab:sidewalk-conf-cov}). Choosing endangering pedestrians on the
-sidewalk as more acceptable was associated with greater confidence
-(\(EMM = 72.99\)) than choosing endangering pedestrians on the road
-(\(EMM = 65.46\)), \(p = 0.0483\).
-
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \begin{tabular}{lrrrr}
   \hline
- & num Df & den Df & F & Pr($>$F) \\
+  & \(\chi^2\) & \(df\) & \(p\) \\
   \hline
-perspective & 3 & 206 & 2.38 & 0.0712 \\
-  motorist & 1 & 208 & 0.07 & 0.7904 \\
-  judgement & 1 & 351 & 3.01 & 0.0836 \\
-  trial & 1 & 180 & 1.60 & 0.2070 \\
-  perspective \(\times\) motorist & 3 & 206 & 1.63 & 0.1830 \\
-  perspective \(\times\) judgement & 3 & 344 & 1.13 & 0.3353 \\
-  motorist \(\times\) judgement & 1 & 350 & 1.64 & 0.2010 \\
-  perspective \(\times\) motorist \(\times\) judgement & 3 & 344 & 2.54 & 0.0566 \\
+  perspective & 4.44 & 3  & .0163 \\
+  motorist & 2.96 & 1  & .0367 \\
+  trial & 6.91 & 1 &  .0576 \\
+  perspective \(\times\) motorist & 4.32 & 3 & .0121 \\
+  \hline
+\end{tabular}
+\caption{ANOVA table for base judgements model (road versus sidewalk)}
+\label{tab:sidewalk-judge-base}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+  \hline
+  & \(\chi^2\) & \(df\) & \(p\) \\
+  \hline
+  perspective & 14.62 & 3 &  .0071 \\
+  motorist & 4.46 & 1 & .0654 \\
+  trial & 5.18 & 1 &  .0250 \\
+  gender & 5.85 & 1 &  .0210 \\
+  age & 1.95 & 1 &  .1682 \\
+  opinion of self-driving cars & 7.94 & 4  & .1112 \\
+  education & 5.22 & 2 & .1223 \\
+  driving experience & 7.53 & 3 &  .0814 \\
+  visual impairment & 3.73 & 2 &  .1738 \\
+  identification & 16.74 & 2 &  .0031 \\
+  perspective \(\times\) motorist & 7.36 & 3 &  .0916 \\
+  \hline
+\end{tabular}
+\caption{ANOVA table for covariate judgements model (road versus sidewalk)}
+\label{tab:sidewalk-judge-cov}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrrl}
+  \hline
+contrast & odds-ratio & \(SE\) & \(df\) & \(z\) ratio & \(p\) \\
+  \hline
+Passenger / Bystander & 0.0211 & 0.0334 & Inf & -2.433 & .0710 \\
+  Pedestrian on sidewalk / Bystander & 4.5492 & 5.6777 & Inf & 1.214 & .6180 \\
+  Pedestrian on sidewalk / Passenger & 215.7996 & 414.4801 & Inf & 2.798 & .0264 \\
+  Pedestrian on road / Bystander & 1.1751 & 1.3434 & Inf & 0.141 & .9990 \\
+  Pedestrian on road / Passenger & 55.7453 & 93.7239 & Inf & 2.391 & .0787 \\
+  Pedestrian on road / Pedestrian on sidewalk & 0.2583 & 0.2912 & Inf & -1.201 & .6264 \\
+   \hline
+
+\multicolumn{6}{l}{{\footnotesize P value adjustment: tukey method for comparing a family of 4 estimates}}\\
+
+\multicolumn{6}{l}{{\footnotesize Tests are performed on the log odds ratio scale}}\\
+\end{tabular}
+\caption{Followup contrasts for covariate judgements model (road versus sidewalk)}
+\label{tab:sidewalk-judge-persp-followup}
+\end{table}
+
+\paragraph{Confidence in Judgements}
+
+The base model of confidence (Table \ref{tab:sidewalk-conf-base}),
+showed a marginally significant effect of decision, however this
+effect was significant in the model including the covariates
+(Table~\ref{tab:sidewalk-conf-cov}). Choosing endangering pedestrians
+on the sidewalk as more acceptable was associated with greater
+confidence (\(EMM = 72.99\)) than choosing endangering pedestrians on
+the road (\(EMM = 65.46\)), \(p = .0483\).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+  \hline
+ & num \(df\) & den \(df\) & \(F\) & \(p\) \\
+  \hline
+perspective & 3 & 206 & 2.38 & .0712 \\
+  motorist & 1 & 208 & 0.07 & .7904 \\
+  judgement & 1 & 351 & 3.01 & .0836 \\
+  trial & 1 & 180 & 1.60 & .2070 \\
+  perspective \(\times\) motorist & 3 & 206 & 1.63 & .1830 \\
+  perspective \(\times\) judgement & 3 & 344 & 1.13 & .3353 \\
+  motorist \(\times\) judgement & 1 & 350 & 1.64 & .2010 \\
+  perspective \(\times\) motorist \(\times\) judgement & 3 & 344 & 2.54 & .0566 \\
    \hline
 \end{tabular}
 \caption{ANOVA table for base confidence model (sidewalk vs road)}
@@ -264,26 +380,26 @@ perspective & 3 & 206 & 2.38 & 0.0712 \\
 \end{table}
 
 
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \begin{tabular}{lrrrr}
   \hline
- & num Df & den Df & F & Pr($>$F) \\
+ & num \(df\) & den \(df\) & \(F\) & \(p\) \\
   \hline
-perspective & 3 & 183 & 1.96 & 0.1223 \\
-  motorist & 1 & 190 & 0.04 & 0.8365 \\
-  judgement & 1 & 335 & 3.93 & 0.0483 \\
-  trial & 1 & 180 & 1.70 & 0.1943 \\
-  gender & 1 & 164 & 3.99 & 0.0474 \\
-  opinion of self-driving cars & 4 & 160 & 1.08 & 0.3697 \\
-  education & 2 & 160 & 0.47 & 0.6239 \\
-  driving experience & 4 & 160 & 0.30 & 0.8789 \\
-  identification & 2 & 165 & 0.09 & 0.9134 \\
-  age & 1 & 160 & 0.03 & 0.8697 \\
-  perspective \(\times\) motorist & 3 & 189 & 1.47 & 0.2237 \\
-  perspective \(\times\) judgement & 3 & 330 & 0.81 & 0.4905 \\
-  motorist \(\times\) judgement & 1 & 337 & 2.30 & 0.1300 \\
-  perspective \(\times\) motorist\(\times\)judgement & 3 & 331 & 2.03 & 0.1090 \\
+perspective & 3 & 183 & 1.96 & .1223 \\
+  motorist & 1 & 190 & 0.04 & .8365 \\
+  judgement & 1 & 335 & 3.93 & .0483 \\
+  trial & 1 & 180 & 1.70 & .1943 \\
+  gender & 1 & 164 & 3.99 & .0474 \\
+  opinion of self-driving cars & 4 & 160 & 1.08 & .3697 \\
+  education & 2 & 160 & 0.47 & .6239 \\
+  driving experience & 4 & 160 & 0.30 & .8789 \\
+  identification & 2 & 165 & 0.09 & .9134 \\
+  age & 1 & 160 & 0.03 & .8697 \\
+  perspective \(\times\) motorist & 3 & 189 & 1.47 & .2237 \\
+  perspective \(\times\) judgement & 3 & 330 & 0.81 & .4905 \\
+  motorist \(\times\) judgement & 1 & 337 & 2.30 & .1300 \\
+  perspective \(\times\) motorist\(\times\)judgement & 3 & 331 & 2.03 & .1090 \\
    \hline
 \end{tabular}
 \caption{ANOVA table for confidence model (road versus sidewalk
@@ -293,51 +409,99 @@ perspective & 3 & 183 & 1.96 & 0.1223 \\
 \subsubsection{Car occupants versus pedestrians}
 \label{sec:carsac}
 
-Overall, endangering the car occupants was more considered more
-acceptable than endangering the pedestrians on the road in 68.75\% of
-trials. An exact binomial test showed this to be significantly
-different from 50\%, \(p < .0001\). Mean confidence (on a 0 to 100
-scale) was 60.53 (\(SD = 33.72\)). Figure~\ref{fig:carsac-plot} shows
-the responses to the passengers versus pedestrians dilemmas, grouped
-by condition.
+Overall, endangering the car occupants was considered more acceptable
+than endangering the pedestrians on the road in 68.75\% of trials. An
+exact binomial test showed this to be significantly different from
+50\%, \(p < .0001\). Mean confidence (on a 0 to 100 scale) was 60.53
+(\(SD = 33.72\)). Figure~\ref{fig:carsac-plot} shows the responses to
+the car occupants versus pedestrians dilemmas, grouped by condition.
 
-\begin{figure}
-  \includegraphics[width=\textwidth]{figure/carsac-cropped}
+\begin{figure}[H]
+%  \includegraphics[width=\textwidth]{figure/carsac-cropped}
   \caption{Responses to the passengers versus pedestrians dilemmas.}
     \label{fig:carsac-plot}
 \end{figure}
 
 \paragraph{Judgements}
-TODO
+No significant effects of perspective or motorist were found in either
+the base (Table~\ref{tab:carsac-judge-base}) or covariate
+(Table~\ref{tab:carsac-judge-cov}) models. However, there was a
+significant effect of trial, such that choosing endangering car
+occupants as more acceptable was more probable in the city trial, in
+which the car would head towards a parked van (\(EMM = .92\), than
+the mountain trial, in which the car would head towards a cliff edge
+(\(EMM = .56\)), odds-ratio \(= 8.64, p <.0001\) (values based on
+covariate model).
+
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+  \hline
+  & \(\chi^2\) & \(df\) &  \(p\) \\
+  \hline
+  perspective & 5.72 & 2 &  .0592 \\
+  motorist & 0.76 & 1 &  .4157 \\
+  trial & 62.27 & 1 &  .0010 \\
+  perspective \(\times\) motorist & 0.92 & 2 &  .6439 \\
+  \hline
+\end{tabular}
+\caption{ANOVA table for base judgements model (car occupants versus
+  pedestrians)}
+\label{tab:carsac-judge-base}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{lrrrr}
+  \hline
+  & \(\chi^2\) & \(df\) & \(p\) \\
+  \hline
+  perspective & 2.75 & 2 & .2979 \\
+  motorist & 1.14 & 1 &  .3189 \\
+  trial & 63.96 & 1 & .0010 \\
+  gender & 0.04 & 1 &  .8516 \\
+  age & 0.48 & 1 &  .5301 \\
+  opinion of self-driving cars & 5.60 & 4 &  .2919 \\
+  education & 2.12 & 2 & .4012 \\
+  driving experience & 2.86 & 3 &  .4574 \\
+  visual impairment & 5.04 & 2 &  .1043 \\
+  identification & 0.43 & 2 &  .8205 \\
+  perspective \(\times\) motorist & 0.63 & 2 &  .7332 \\
+  \hline
+\end{tabular}
+\caption{ANOVA table for covariate judgements model (road versus sidewalk)}
+\label{tab:carsac-judge-cov}
+\end{table}
 
 \paragraph{Confidence in judgements}
 The base model and the model with covariates did not differ in which
 effects were considered significant, thus all effects refer to the
 model with covariates.  As shown in Table~\ref{tab:carsac-conf-cov},
-there was a significant main effect of judgement. Those who considered
-endangering the car occupants as more acceptable were significantly
-more confident (\(EMM = 65.68\)) than those who considered endangering
-the pedestrians (\(EMM = 51.07\)), \(p = .0004\). Furthermore there
-was a significant effect of trial. Responses to the city trial, in
-which the car would drive towards a parked van, had higher confidence
-(\(EMM = 66.53\)) than responses to the mountain trial, in which the
-car would drive towards a cliff edge (\(EMM = 50.21\)),
-(\(p < .0001\)).
+there was a significant main effect of judgement. Choices of
+endangering the car occupants as more acceptable were associated with
+significantly higher confidence (\(EMM = 65.68\)) than choices of
+endangering the pedestrians (\(EMM = 51.07\)), \(p =
+.0004\). Furthermore there was a significant effect of
+trial. Responses to the city trial, in which the car would drive
+towards a parked van, had higher confidence (\(EMM = 66.53\)) than
+responses to the mountain trial, in which the car would drive towards
+a cliff edge (\(EMM = 50.21\)), (\(p < .0001\)).
 
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \begin{tabular}{lrrrr}
   \hline
- & num Df & den Df & F & Pr($>$F) \\
+ & num \(df\) & den \(df\) & \(F\) & \(p\) \\
   \hline
-perspective & 2 & 207 & 1.85 & 0.1596 \\
-  motorist & 1 & 210 & 0.35 & 0.5552 \\
-  judgement & 1 & 342 & 12.90 & 0.0004 \\
-  trial & 1 & 209 & 24.95 & 0.0000 \\
-  perspective \(\times\) motorist & 2 & 207 & 0.38 & 0.6825 \\
-  perspective \(\times\) judgement & 2 & 317 & 0.98 & 0.3779 \\
-  motorist \(\times\) judgement & 1 & 321 & 1.54 & 0.2161 \\
-  perspective \(\times\) motorist \(\times\) judgement & 2 & 319 & 0.23 & 0.7945 \\
+perspective & 2 & 207 & 1.85 & .1596 \\
+  motorist & 1 & 210 & 0.35 & .5552 \\
+  judgement & 1 & 342 & 12.90 & .0004 \\
+  trial & 1 & 209 & 24.95 & $<$ .0001 \\
+  perspective \(\times\) motorist & 2 & 207 & 0.38 & .6825 \\
+  perspective \(\times\) judgement & 2 & 317 & 0.98 & .3779 \\
+  motorist \(\times\) judgement & 1 & 321 & 1.54 & .2161 \\
+  perspective \(\times\) motorist \(\times\) judgement & 2 & 319 & 0.23 & .7945 \\
    \hline
 \end{tabular}
 \caption{ANOVA table for base confidence model (car occupants versus
@@ -346,29 +510,29 @@ perspective & 2 & 207 & 1.85 & 0.1596 \\
 \end{table}
 
 
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \begin{tabular}{lrrrr}
   \hline
- & num Df & den Df & F & Pr($>$F) \\
+  & num \(df\) & den \(df\) & \(F\) & \(p\) \\
   \hline
-perspective & 2 & 185 & 2.60 & 0.0768 \\
-  motorist & 1 & 196 & 0.12 & 0.7306 \\
-  judgement & 1 & 332 & 12.36 & 0.0005 \\
-  trial & 1 & 208 & 25.56 & 0.0000 \\
-  gender & 1 & 164 & 0.71 & 0.3993 \\
-  opinion of self-driving cars & 4 & 163 & 1.10 & 0.3584 \\
-  education & 2 & 162 & 3.44 & 0.0345 \\
-  driving experience & 4 & 164 & 0.43 & 0.7858 \\
-  identification & 2 & 162 & 0.48 & 0.6175 \\
-  age & 1 & 163 & 0.21 & 0.6487 \\
-  perspective \(\times\) motorist & 2 & 190 & 0.20 & 0.8228 \\
-  perspective \(\times\) judgement & 2 & 309 & 1.12 & 0.3271 \\
-  motorist \(\times\) judgement & 1 & 311 & 1.23 & 0.2691 \\
-  perspective \(\times\) motorist \(\times\) judgement & 2 & 309 & 0.27 & 0.7614 \\
-   \hline
+  perspective & 2 & 185 & 2.60 & .0768 \\
+  motorist & 1 & 196 & 0.12 & .7306 \\
+  judgement & 1 & 332 & 12.36 & .0005 \\
+  trial & 1 & 208 & 25.56 & $<.0001$ \\
+  gender & 1 & 164 & 0.71 & .3993 \\
+  opinion of self-driving cars & 4 & 163 & 1.10 & .3584 \\
+  education & 2 & 162 & 3.44 & .0345 \\
+  driving experience & 4 & 164 & 0.43 & .7858 \\
+  identification & 2 & 162 & 0.48 & .6175 \\
+  age & 1 & 163 & 0.21 & .6487 \\
+  perspective \(\times\) motorist & 2 & 190 & 0.20 & .8228 \\
+  perspective \(\times\) judgement & 2 & 309 & 1.12 & .3271 \\
+  motorist \(\times\) judgement & 1 & 311 & 1.23 & .2691 \\
+  perspective \(\times\) motorist \(\times\) judgement & 2 & 309 & 0.27 & .7614 \\
+  \hline
 \end{tabular}
-\caption{ANOVA table for confidence model (car occupants versus
+\caption{ANOVA table for confidence model with covariates (car occupants versus
   pedestrians dilemmas)}
 \label{tab:carsac-conf-cov}
 \end{table}
