@@ -1,0 +1,726 @@
+\documentclass{scrartcl}
+\title{Online Acceptability analysis script}
+\subtitle{}
+\author{Study Project Group}
+\date{\today}
+
+% specify packages and configs
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=blue}
+\usepackage{breakurl}
+\def\UrlBreaks{\do\/\do-}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{natbib}
+\usepackage{usebib}
+\usepackage{lmodern}
+\usepackage{slantsc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\begin{document}
+\pagenumbering{gobble}
+\maketitle
+\newpage
+\pagenumbering{arabic}
+
+\section{R setup}
+\label{sec:setup}
+
+Before we run the analysis, we need to set a random seed to ensure
+reproducibility. We also need to load the required packages.
+
+<<setup>>=
+our_seed <- 123
+set.seed(our_seed)
+
+require(knitr)
+require(lme4)
+require(afex)
+library(memisc)
+require(cowplot)
+require(DHARMa)
+require(xtable)
+require(rockchalk)
+require(tikzDevice)
+require(parallel)
+require(fifer)
+require(multcomp)
+require(vcdExtra)
+require(catspec)
+require(data.table)
+@
+
+\section{Read the data file}
+\label{sec:read-data}
+
+Now we read the data file
+
+<<read-data>>=
+data <- read.csv("online_accept_data/raw/online_accept_data_clean.csv", fileEncoding="UTF16")
+@
+
+Then we rename some of the variables and set the correct data types for the variables
+
+
+<<temp-clean>>=
+setnames(data, "exp_subject_id", "participant")
+setnames(data, "PERSP", "perspective")
+setnames(data, "DRIVER_TYPE", "motorist")
+setnames(data, "first_vid", "first_anim")
+
+data$perspective[ data$perspective == "" ] <- NA
+
+data$perspective <- droplevels(data$perspective)
+
+levels(data$perspective) <- c("car", "observer",
+                              "pedestrian_fwd", "pedestrian_side")
+
+data$motorist[ data$motorist == "" ] <- NA
+
+data$motorist <- droplevels(data$motorist)
+
+
+levels(data$motorist) <- c("self-driving", "human")
+
+# ensure correct data types
+data$first_anim <- factor(data$first_anim)
+data$scenario <- factor(data$scenario)
+data$participant <- factor(data$participant)
+data$response <- factor(data$response)
+data$perspective <- factor(data$perspective)
+data$motorist <- factor(data$motorist)
+data$country <- factor(data$country)
+data$better_place <- ordered(data$better_place)
+data$driving_experience <- ordered(data$driving_experience,
+                                   levels = c("0",
+                                              "5",
+                                              "6-10",
+                                              "10+"))
+data$age_group <- ordered(data$age_group)
+
+questions.sub <- subset(data, grepl("ques", data$Block_Name) & data$scenario == "")
+
+questions.sub[ questions.sub == "" ] <- NA
+
+
+questions.sub <- subset(questions.sub, select = c("participant", "gender", "knowledge_of_av", "identify", "driving_experience", "age_group", "better_place", "country"))
+
+
+
+data.clean <- subset(data, data$ratio != "" & data$scenario != "")
+
+data.clean <- subset(data.clean, select = c("participant", "perspective", "motorist", "scenario", "ratio", "response", "first_anim"))
+
+
+data.clean <- droplevels(data.clean)
+
+data.use <- merge(questions.sub, data.clean)
+data.use[ data.use == "" ] <- NA
+data.use <- droplevels(data.use)
+
+
+
+@
+
+
+<<variable-type>>=
+
+setnames(data, "Subject_Id", "participant")
+setnames(data, "PERSP", "perspective")
+setnames(data, "DRIVER_TYPE", "motorist")
+setnames(data, "first_vid", "first_anim")
+
+levels(data$perspective) <- c("car", "observer",
+                              "pedestrian_fwd", "pedestrian_side")
+levels(data$motorist) <- c("self-driving", "human")
+
+# ensure correct data types
+data$first_anim <- factor(data$first_anim)
+data$scenario <- factor(data$scenario)
+data$participant <- factor(data$participant)
+data$response <- factor(data$response)
+data$perspective <- factor(data$perspective)
+data$motorist <- factor(data$motorist)
+data$country <- factor(data$country)
+data$Trial_Nr <- ordered(data$Trial_Nr)
+
+data$driving_experience <- ordered(data$driving_experience,
+                                   levels = c("0",
+                                              "5",
+                                              "6-10",
+                                              "10+"))
+
+@
+
+\section{Manipulation check}
+\label{sec:manip-check}
+
+Here we take single trial that all participants completed (arbitrary
+choice, but we use road 1v1). Then we create a contingency table and
+perform a chisq goodness of fit test.
+
+<<manip-check>>=
+manip_check.sub <- subset(data.use, ((ratio == "1v1") & (scenario == "road")))
+manip_check.sub <- droplevels(manip_check.sub)
+
+manip_check.sub$perspective <- combineLevels(
+    manip_check.sub$perspective,
+    levs = c("pedestrian_fwd", "pedestrian_side"),
+    newLabel = c("pedestrian"))
+
+manip_check.xtab <- xtabs(~perspective + identify, data = manip_check.sub)
+
+manip_check.chisq <- chisq.test(manip_check.xtab, simulate.p.value = TRUE)
+
+manip_check.chisq
+
+manip_check.post <- chisq.post.hoc(manip_check.xtab)
+manip_check.post
+
+@
+
+\section{Occupant-pedestrian dilemmas}
+\label{sec:carsac}
+
+We now get to one of the main analyses: the GLMM for the car occupants
+vs pedestrians dilemmas.
+
+The `ratio' or `number of people' variable could be considered
+continuous or as an ordered factor. We will try fitting two models,
+one with ratio as a factor and the other as a numeric (continuous)
+variable.
+
+\subsection{Preliminaries}
+\label{sec:carsac-setup}
+
+First we need to create a subset of the data that only includes the
+correct trials.
+
+<<carped-subset>>=
+carped.sub <- subset(data, scenario == "carsac")
+carped.sub$ratio_f <- ordered(carped.sub$ratio)
+carped.sub$ratio_c <- as.numeric(carped.sub$ratio)
+carped.sub <- droplevels(carped.sub)
+
+carped.sub$perspective <- combineLevels(carped.sub$perspective,
+                                        levs = c("pedestrian_fwd"),
+                                        newLabel = c("pedestrian"))
+@
+
+Next we run a GLMM with ratio as a factor
+
+<<carped-glmm-fac>>=
+
+carped_fac.glmm <- glmer(response ~ ratio_f + perspective + motorist +
+                             ratio_f:perspective +
+                             ratio_f:motorist +
+                             perspective:motorist +
+                             ratio_f:perspective:motorist +
+                             first_anim +
+                             (1 | participant),
+                         family = binomial,
+                     data = carped.sub,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+@
+
+And we check the residuals.
+
+<<carped-glmm-fac-resid>>=
+carped_fac_glmm.resid <- simulateResiduals(
+    fittedModel = carped_fac.glmm, n = 2000)
+carped_fac_glmm_resid.plot <- plotSimulatedResiduals(
+    simulationOutput = carped_fac_glmm.resid)
+@
+
+Then we repeat this process but with ratio as a continuous variable
+
+<<carped-glmm-num>>=
+carped_num.glmm <- glmer(response ~ ratio_c + perspective + motorist +
+                             ratio_c:perspective +
+                             ratio_c:motorist +
+                             perspective:motorist +
+                             ratio_c:perspective:motorist +
+                             first_anim +
+                             (1 | participant),
+                         family = binomial,
+                     data = carped.sub,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+@
+
+<<carped-glmm-num-resid>>=
+carped_num_glmm.resid <- simulateResiduals(
+    fittedModel = carped_num.glmm, n = 2000)
+carped_num_glmm_resid.plot <- plotSimulatedResiduals(
+    simulationOutput = carped_num_glmm.resid)
+@
+
+We use AIC to compare the two and choose the model with the lower AIC
+(which indicates the better model).
+
+<<carped-model-select>>=
+carped_cmp <- anova(carped_num.glmm, carped_fac.glmm)
+carped_cmp
+@
+
+\subsection{The model}
+\label{sec:carped-glmm-anova}
+
+Now we run the model that had the lower AIC using parametric
+bootstrapping to test the significance of the predictors.
+
+This step will take a long time (maybe hours). But for testing
+purposes we change the ``PB'' to ``LRT''. PB = parametric
+bootstrapping, LRT = Likelihood-Ratio Test.
+
+<<carped-glmm-anova>>=
+(nc <- detectCores())
+cl <- makeCluster(rep("localhost", nc))
+
+
+carped_glmm <- mixed(response ~ as.numeric(ratio) + perspective + motorist +
+                         as.numeric(ratio):perspective +
+                         as.numeric(ratio):motorist +
+                         perspective:motorist +
+                         as.numeric(ratio):perspective:motorist +
+                         first_anim +
+                         (1 | participant),
+                     method = "LRT", # LRT for testing, PB for final
+                     family = binomial, data = carped.sub,
+                     args_test = list(nsim = 100, cl = cl), cl = cl,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+@
+
+\subsection{Follow up tests}
+\label{sec:carped-followup}
+
+Based on our hypotheses, we want follow up tests for the effect of
+ratio by motorist type by perspective
+
+Additionally we will include follow up tests for main effects and
+lower-order interactions in case they are significant.
+
+This code assumes that the model we use is with ratio as factor.
+
+<<carped-followup>>=
+
+emm_carped_i3 <- emmeans(object = carped_glmm,
+                         pairwise ~ motorist | ratio_c * perspective,
+                         type = "response",
+                         at = list(ratio_c = c(1, 2, 3, 4)))
+
+emm_carped_persp_ratio <- emmeans(object = carped_glmm,
+                                  pairwise ~ perspective | ratio_c,
+                                  type = "response",
+                                  at = list(ratio = c(1, 2, 3, 4)))
+
+@
+
+
+\subsection{Plot}
+\label{sec:carped-plot}
+
+<<carped-plot>>=
+
+label_names <- c("self-driving" = "Self-driving car",
+                 "human" = "Human driver",
+                 "sidewalk" = "Sidewalk",
+                 "road" = "Road",
+                 "pedestrian" = "Pedestrian",
+                 "car" = "Car occupant",
+                 "observer" = "Bird's-eye view")
+
+# create predicted data for plotting
+ratio <- rep(c("1v1", "2v1", "3v1", "4v1"), 6)
+perspective <- rep(c("car", "observer", "pedestrian",
+                     "car", "observer", "pedestrian"),
+                   each = 4)
+motorist <- rep(c("self-driving", "human"), each = 12)
+
+carped_plot.data <- data.frame(ratio, perspective, motorist)
+carped_plot.data$ratio_c <- ratio
+
+carped_plot.data$response <- predict(carped_num.glmm,
+                                     newdata = carped_plot.data,
+                                     re.form = NA,
+                                     type = "response")
+
+carped.plot <- ggplot(carped_plot.data,
+                      aes(as.numeric(ratio),
+                          as.numeric(response),
+                          color = perspective)) +
+    geom_line(aes(group = perspective)) +
+    facet_grid(.~ motorist, labeller = as_labeller(label_names)) +
+    theme_cowplot(font_size = 10) + geom_point() +
+    scale_x_continuous(name = "Lives-risked ratio", limits = c(1, 4)) +
+    scale_y_continuous(name = "P(Choosing swerve as more acceptable)",
+                       limits = c(0, 1)) + coord_equal(ratio = 3) +
+    scale_color_manual(name = "Perspective",
+                       labels = c("Car occupant",
+                                  "Bird's-eye view",
+                                  "Pedestrian"),
+                       values = c("red3", "skyblue", "orange1" ))
+
+carped.plot
+
+@
+
+\section{Pedestrian-pedestrian dilemmas}
+\label{sec:pedped}
+
+We now get the other main analysis: the GLMM for the pedestrians vs
+pedestrians dilemmas.
+
+The `ratio' or `number of people' variable could be considered
+continuous or as an ordered factor. We will try fitting two models,
+one with ratio as a factor and the other as a numeric (continuous)
+variable.
+
+\subsection{Preliminaries}
+\label{sec:pedped-setup}
+
+First we need to create a subset of the data that only includes the
+correct trials.
+
+<<pedped-subset>>=
+pedped.sub <- subset(data, (scenario == "road" | scenario == "sidewalk"))
+
+
+pedped.sub$ratio_f <- ordered(pedped.sub$ratio)
+pedped.sub$ratio_c<- as.numeric(pedped.sub$ratio)
+
+pedped.sub <- droplevels(pedped.sub)
+@
+
+Next we run a GLMM with ratio as a factor
+
+<<pedped-glmm-fac>>=
+pedped_fac.glmm <- glmer(response ~ ratio_f * perspective * motorist +
+                             ratio_f * scenario * motorist +
+                             (ratio_f + scenario + 1 | participant),
+                         family = binomial,
+                         data = pedped.sub,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+@
+
+And we check the residuals.
+
+<<pedped-glmm-fac-resid>>=
+pedped_fac_glmm.resid <- simulateResiduals(
+    fittedModel = pedped_fac.glmm, n = 2000)
+pedped_fac_glmm_resid.plot <- plotSimulatedResiduals(
+    simulationOutput = pedped_fac_glmm.resid)
+
+@
+
+Then we repeat this process but with ratio as a continuous variable
+
+<<pedped-glmm-num>>=
+pedped_num.glmm <- glmer(response ~ ratio_c * perspective * motorist +
+                             ratio_c * scenario * motorist +
+                             (ratio_c + scenario + 1 | participant),
+                         family = binomial,
+                         data = pedped.sub,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+@
+
+<<pedped-glmm-num-resid>>=
+pedped_num_glmm.resid <- simulateResiduals(
+    fittedModel = pedped_num.glmm, n = 2000)
+pedped_num_glmm_resid.plot <- plotSimulatedResiduals(
+    simulationOutput = pedped_num_glmm.resid)
+
+@
+
+We use AIC to compare the two and choose the model with the lower AIC
+(which indicates the better model).
+
+<<pedped-model-select>>=
+
+@
+
+\subsection{The model}
+\label{sec:pedped-glmm-anova}
+
+Now we run the model that had the lower AIC using parametric
+bootstrapping to test the significance of the predictors.
+
+This step will take a long time (maybe hours). But for testing
+purposes we change the ``PB'' to ``LRT''. PB = parametric
+bootstrapping, LRT = Likelihood-Ratio Test.
+
+<<pedped-glmm-anova>>=
+
+
+(nc <- detectCores())
+cl <- makeCluster(rep("localhost", nc))
+
+
+pedped_glmm <- mixed(response ~ ratio_c * perspective * motorist +
+                             ratio_c * scenario * motorist +
+                             (ratio_c + scenario + 1 | participant),
+                     method = "LRT", # LRT for testing, PB for final
+                     family = binomial, data = pedped.sub,
+                     args_test = list(nsim = 100, cl = cl), cl = cl,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+@
+
+\subsection{Follow up tests}
+\label{sec:pedped-followup}
+
+Here we'll perform all the possible followup tests that we might want
+based on our hypotheses. We'll only look at the ones that correspond
+to significant effects in the model but we'll compute all of them.
+
+Based on our hypotheses, we want follow up tests for the effect of
+ratio by motorist-type by scenario (road/sidewalk) and ratio by
+perspective.
+
+Additionally we will include follow up tests for main effects and
+lower-order interactions in case they are significant.
+
+This code assumes that the model we use is with ratio as continuous.
+
+<<pedped-followup>>=
+
+emm_pedped_i3 <- emmeans(object = pedped_num.glmm,
+                         pairwise ~ motorist | ratio_c * scenario,
+                         type = "response",
+                         at = list(ratio_c = c(1, 2, 3, 4)))
+
+
+emm_pedped_persp_ratio <- emmeans(object = pedped_num.glmm,
+                                  pairwise ~ perspective | ratio_c,
+                                  type = "response",
+                                  at = list(ratio_c = c(1, 2, 3, 4)))
+
+@
+
+\subsection{Plot}
+\label{sec:pedped-plot}
+
+<<pedped-plot>>=
+
+label_names <- c("self-driving" = "Self-driving car",
+                 "human" = "Human driver",
+                 "sidewalk" = "Sidewalk",
+                 "road" = "Road",
+                 "pedestrian_fwd" = "Pedestrian (F)",
+                 "pedestrian_side" = "Pedestrian (S)",
+                 "car" = "Car occupant",
+                 "observer" = "Bird's-eye view")
+
+# create predicted data for plotting
+ratio_c <- rep(c(1, 2, 3, 4), 16)
+perspective <- rep(c("car", "observer",
+                     "pedestrian_fwd", "pedestrian_side",
+                     "car", "observer",
+                     "pedestrian_fwd", "pedestrian_side"), each = 8)
+motorist <- rep(c("self-driving", "human"), each = 32)
+
+scenario <- rep(rep(c("road", "sidewalk"), each = 4), 8)
+
+pedped_plot.data <- data.frame(ratio_c, perspective, motorist, scenario)
+
+pedped_plot.data$response <- predict(pedped_num.glmm,
+                                     newdata = pedped_plot.data,
+                                     re.form = NA,
+                                     type = "response")
+
+
+pedped.plot <- ggplot(pedped_plot.data,
+                      aes(ratio_c, as.numeric(response), color = perspective)) +
+    facet_grid( scenario ~ motorist,
+               labeller = as_labeller(label_names)) +
+    geom_line(aes(group = perspective)) +
+    theme_cowplot(font_size = 10) + geom_point() +
+    scale_x_continuous(name = "Lives-risked ratio", limits = c(1, 4)) +
+    scale_y_continuous(name = "P(Choosing swerve as more acceptable)",
+                       limits = c(0, 1)) + coord_equal(ratio = 3) +
+    scale_color_manual(name = "Perspective",
+                       labels = c("Car occupant",
+                                  "Bird's-eye view",
+                                  "Pedestrian (F)",
+                                  "Pedestrian (S)"),
+                       values = c("red",
+                                  "skyblue",
+                                  "orange",
+                                  "darkorange3" ))
+pedped.plot
+
+
+@
+
+\section{Covariate model}
+
+\subsection{Missing data}
+\label{sec:missing}
+
+There is missing data in variables country, age and driving experience.
+The first thing we do is use multiple imputation to create estimated data sets.
+
+<<missing-data>>=
+missmap(data.use)
+
+data.mi <- amelia(x = data.use,
+       m = 5,
+       cs = "participant",
+       idvars = c("country"),
+       noms = c("gender", "identify", "knowledge_of_av","response", "ratio", "first_anim", "perspective", "motorist", "scenario"),
+       ords = c("driving_experience", "age_group", "better_place"))
+
+set1 <- data.frame(data.mi$imputations["imp1"])
+set2 <- data.frame(data.mi$imputations["imp2"])
+set3 <- data.frame(data.mi$imputations["imp3"])
+set4 <- data.frame(data.mi$imputations["imp4"])
+set5 <- data.frame(data.mi$imputations["imp5"])
+
+@
+
+
+<<carped-cov-sub>>=
+carped_cov.sub1 <- subset(set1, imp1.scenario == "carsac")
+
+carped_cov.sub1$ratio_f <- ordered(carped_cov.sub1$imp1.ratio)
+carped_cov.sub1$ratio_c <- as.numeric(carped_cov.sub1$imp1.ratio)
+carped_cov.sub1 <- droplevels(carped_cov.sub1)
+
+carped_cov.sub1$imp1.perspective <- combineLevels(carped_cov.sub1$imp1.perspective,
+                                        levs = c("pedestrian_fwd"),
+                                        newLabel = c("pedestrian"))
+
+carped_cov.sub2 <- subset(set2, imp2.scenario == "carsac")
+
+carped_cov.sub2$ratio_f <- ordered(carped_cov.sub2$imp2.ratio)
+carped_cov.sub2$ratio_c <- as.numeric(carped_cov.sub2$imp2.ratio)
+carped_cov.sub2 <- droplevels(carped_cov.sub2)
+
+carped_cov.sub2$imp2.perspective <- combineLevels(carped_cov.sub2$imp2.perspective,
+                                        levs = c("pedestrian_fwd"),
+                                        newLabel = c("pedestrian"))
+
+carped_cov.sub3 <- subset(set3, imp3.scenario == "carsac")
+
+carped_cov.sub3$ratio_f <- ordered(carped_cov.sub3$imp3.ratio)
+carped_cov.sub3$ratio_c <- as.numeric(carped_cov.sub3$imp3.ratio)
+carped_cov.sub3 <- droplevels(carped_cov.sub3)
+
+carped_cov.sub3$imp3.perspective <- combineLevels(carped_cov.sub3$imp3.perspective,
+                                        levs = c("pedestrian_fwd"),
+                                        newLabel = c("pedestrian"))
+
+carped_cov.sub4 <- subset(set4, imp4.scenario == "carsac")
+
+carped_cov.sub4$ratio_f <- ordered(carped_cov.sub4$imp4.ratio)
+carped_cov.sub4$ratio_c <- as.numeric(carped_cov.sub4$imp4.ratio)
+carped_cov.sub4 <- droplevels(carped_cov.sub4)
+
+carped_cov.sub4$imp4.perspective <- combineLevels(carped_cov.sub4$imp4.perspective,
+                                        levs = c("pedestrian_fwd"),
+                                        newLabel = c("pedestrian"))
+
+carped_cov.sub5 <- subset(set5, imp5.scenario == "carsac")
+
+carped_cov.sub5$ratio_f <- ordered(carped_cov.sub5$imp5.ratio)
+carped_cov.sub5$ratio_c <- as.numeric(carped_cov.sub5$imp5.ratio)
+carped_cov.sub5 <- droplevels(carped_cov.sub5)
+
+carped_cov.sub5$imp5.perspective <- combineLevels(carped_cov.sub5$imp5.perspective,
+                                        levs = c("pedestrian_fwd"),
+                                        newLabel = c("pedestrian"))
+
+@
+
+<<carped-glmm-cov>>=
+(nc <- detectCores())
+cl <- makeCluster(rep("localhost", nc))
+
+carped_cov_glmm.1 <- mixed(imp1.response ~  imp1.ratio_c * imp1.perspective * imp1.motorist +
+                             imp1.gender + imp1.age_group + imp1.better_place +
+                             imp1.driving_experience + imp1.identify +
+                             (1 | imp1.participant),
+                     method = "LRT", # LRT for testing, PB for final
+                     family = binomial, data = carped_cov.sub1,
+                     args_test = list(nsim = 1000, cl = cl), cl = cl,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+
+carped_cov_glmm.2 <- mixed(imp2.response ~  imp2.ratio_c * imp2.perspective * imp2.motorist +
+                             imp2.gender + imp2.age_group + imp2.better_place +
+                             imp2.driving_experience + imp2.identify +
+                             (2 | imp2.participant),
+                     method = "LRT", # LRT for testing, PB for final
+                     family = binomial, data = carped_cov.sub2,
+                     args_test = list(nsim = 1000, cl = cl), cl = cl,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+
+carped_cov_glmm.3 <- mixed(imp3.response ~  imp3.ratio_c * imp3.perspective * imp3.motorist +
+                             imp3.gender + imp3.age_group + imp3.better_place +
+                             imp3.driving_experience + imp3.identify +
+                             (3 | imp3.participant),
+                     method = "LRT", # LRT for testing, PB for final
+                     family = binomial, data = carped_cov.sub3,
+                     args_test = list(nsim = 1000, cl = cl), cl = cl,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+
+carped_cov_glmm.4 <- mixed(imp4.response ~  imp4.ratio_c * imp4.perspective * imp4.motorist +
+                             imp4.gender + imp4.age_group + imp4.better_place +
+                             imp4.driving_experience + imp4.identify +
+                             (4 | imp4.participant),
+                     method = "LRT", # LRT for testing, PB for final
+                     family = binomial, data = carped_cov.sub4,
+                     args_test = list(nsim = 1000, cl = cl), cl = cl,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+carped_cov_glmm.5 <- mixed(imp5.response ~  imp5.ratio_c * imp5.perspective * imp5.motorist +
+                             imp5.gender + imp5.age_group + imp5.better_place +
+                             imp5.driving_experience + imp5.identify +
+                             (5 | imp5.participant),
+                     method = "LRT", # LRT for testing, PB for final
+                     family = binomial, data = carped_cov.sub5,
+                     args_test = list(nsim = 1000, cl = cl), cl = cl,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+
+
+
+@
+
+<<carped-cov-followup>>=
+
+
+emm_carped_cov1_i3 <- emmeans(object = carped_cov_glmm.1,
+                         pairwise ~ imp1.motorist | imp1.ratio_c* imp1.perspective,
+                         type = "response",
+                         at = list(ratio = c(1, 2, 3, 4)))
+
+emm_carped_persp_ratio <- emmeans(object = carped_cov_glmm.1,
+                                  pairwise ~ imp1.perspective | imp1.ratio,
+                                  type = "response",
+                                  at = list(ratio = c(1, 2, 3, 4)))
+
+
+
+@
+
+\end{document}
