@@ -590,6 +590,11 @@ set5 <- data.frame(data.mi$imputations["imp5"])
 
 @
 
+Then we create the subsets for the different dilemma types from the
+imputed data sets and run the GLMMs for each (5 times).
+
+\subsection{Occupant-pedestrian dilemmas}
+\label{sec:carped-cov}
 
 <<carped-cov-sub>>=
 carped_cov.sub1 <- subset(set1, imp1.scenario == "carsac")
@@ -662,7 +667,7 @@ carped_cov_glmm.1 <- mixed(imp1.response ~  imp1.ratio_c * imp1.perspective * im
 carped_cov_glmm.2 <- mixed(imp2.response ~  imp2.ratio_c * imp2.perspective * imp2.motorist +
                              imp2.gender + imp2.age_group + imp2.better_place +
                              imp2.driving_experience + imp2.identify +
-                             (2 | imp2.participant),
+                             (1 | imp2.participant),
                      method = "LRT", # LRT for testing, PB for final
                      family = binomial, data = carped_cov.sub2,
                      args_test = list(nsim = 1000, cl = cl), cl = cl,
@@ -673,7 +678,7 @@ carped_cov_glmm.2 <- mixed(imp2.response ~  imp2.ratio_c * imp2.perspective * im
 carped_cov_glmm.3 <- mixed(imp3.response ~  imp3.ratio_c * imp3.perspective * imp3.motorist +
                              imp3.gender + imp3.age_group + imp3.better_place +
                              imp3.driving_experience + imp3.identify +
-                             (3 | imp3.participant),
+                             (1 | imp3.participant),
                      method = "LRT", # LRT for testing, PB for final
                      family = binomial, data = carped_cov.sub3,
                      args_test = list(nsim = 1000, cl = cl), cl = cl,
@@ -684,7 +689,7 @@ carped_cov_glmm.3 <- mixed(imp3.response ~  imp3.ratio_c * imp3.perspective * im
 carped_cov_glmm.4 <- mixed(imp4.response ~  imp4.ratio_c * imp4.perspective * imp4.motorist +
                              imp4.gender + imp4.age_group + imp4.better_place +
                              imp4.driving_experience + imp4.identify +
-                             (4 | imp4.participant),
+                             (1 | imp4.participant),
                      method = "LRT", # LRT for testing, PB for final
                      family = binomial, data = carped_cov.sub4,
                      args_test = list(nsim = 1000, cl = cl), cl = cl,
@@ -694,7 +699,7 @@ carped_cov_glmm.4 <- mixed(imp4.response ~  imp4.ratio_c * imp4.perspective * im
 carped_cov_glmm.5 <- mixed(imp5.response ~  imp5.ratio_c * imp5.perspective * imp5.motorist +
                              imp5.gender + imp5.age_group + imp5.better_place +
                              imp5.driving_experience + imp5.identify +
-                             (5 | imp5.participant),
+                             (1 | imp5.participant),
                      method = "LRT", # LRT for testing, PB for final
                      family = binomial, data = carped_cov.sub5,
                      args_test = list(nsim = 1000, cl = cl), cl = cl,
@@ -702,15 +707,12 @@ carped_cov_glmm.5 <- mixed(imp5.response ~  imp5.ratio_c * imp5.perspective * im
                                             optCtrl = list(maxfun = 2e5)))
 
 
-
-
 @
 
 <<carped-cov-followup>>=
 
-
 emm_carped_cov1_i3 <- emmeans(object = carped_cov_glmm.1,
-                         pairwise ~ imp1.motorist | imp1.ratio_c* imp1.perspective,
+                         pairwise ~ imp1.motorist | imp1.ratio_c * imp1.perspective,
                          type = "response",
                          at = list(ratio = c(1, 2, 3, 4)))
 
@@ -723,4 +725,111 @@ emm_carped_persp_ratio <- emmeans(object = carped_cov_glmm.1,
 
 @
 
+
+\subsection{Pedestrian-pedestrian dilemmas}
+\label{sec:pedped-cov}
+
+<<pedped-cov-sub>>=
+
+pedped_cov.sub1 <- subset(set1, (imp1.scenario == "road" | imp1.scenario == "sidewalk"))
+pedped_cov.sub1$ratio_f <- ordered(pedped_cov.sub1$imp1.ratio)
+pedped_cov.sub1$ratio_c <- as.numeric(pedped_cov.sub1$imp1.ratio)
+pedped_cov.sub1 <- droplevels(pedped_cov.sub1)
+
+pedped_cov.sub2 <- subset(set2, (imp2.scenario == "road" | imp2.scenario == "sidewalk"))
+pedped_cov.sub2$ratio_f <- ordered(pedped_cov.sub2$imp2.ratio)
+pedped_cov.sub2$ratio_c <- as.numeric(pedped_cov.sub2$imp2.ratio)
+pedped_cov.sub2 <- droplevels(pedped_cov.sub2)
+
+pedped_cov.sub3 <- subset(set3, (imp3.scenario == "road" | imp3.scenario == "sidewalk"))
+pedped_cov.sub3$ratio_f <- ordered(pedped_cov.sub3$imp3.ratio)
+pedped_cov.sub3$ratio_c <- as.numeric(pedped_cov.sub3$imp3.ratio)
+pedped_cov.sub3 <- droplevels(pedped_cov.sub3)
+
+pedped_cov.sub4 <- subset(set4, (imp4.scenario == "road" | imp4.scenario == "sidewalk"))
+pedped_cov.sub4$ratio_f <- ordered(pedped_cov.sub4$imp4.ratio)
+pedped_cov.sub4$ratio_c <- as.numeric(pedped_cov.sub4$imp4.ratio)
+pedped_cov.sub4 <- droplevels(pedped_cov.sub4)
+
+pedped_cov.sub5 <- subset(set5, (imp5.scenario == "road" | imp5.scenario == "sidewalk"))
+pedped_cov.sub5$ratio_f <- ordered(pedped_cov.sub5$imp5.ratio)
+pedped_cov.sub5$ratio_c <- as.numeric(pedped_cov.sub5$imp5.ratio)
+pedped_cov.sub5 <- droplevels(pedped_cov.sub5)
+
+
+@
+
+
+<<pedped-cov-glmm>>=
+
+(nc <- detectCores())
+cl <- makeCluster(rep("localhost", nc))
+
+
+pedped_cov_glmm.1 <- mixed(imp1.response ~ ratio_c * imp1.perspective * imp1.motorist +
+                             ratio_c * scenario * imp1.motorist +
+                             (imp1.ratio_c + imp1.scenario + 1 | imp1.participant) +
+                             imp1.gender + imp1.age_group + imp1.better_place +
+                             imp1.driving_experience + imp1.identify +
+                     method = "LRT", # LRT for testing, PB for final
+                     family = binomial, data = pedped.sub,
+                     args_test = list(nsim = 100, cl = cl), cl = cl,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+
+
+pedped_cov_glmm.2 <- mixed(imp2.response ~ ratio_c * imp2.perspective * imp2.motorist +
+                             ratio_c * scenario * imp2.motorist +
+                             (imp2.ratio_c + imp2.scenario + 1 | imp2.participant) +
+                             imp2.gender + imp2.age_group + imp2.better_place +
+                             imp2.driving_experience + imp2.identify +
+                     method = "LRT", # LRT for testing, PB for final
+                     family = binomial, data = pedped.sub,
+                     args_test = list(nsim = 1000, cl = cl), cl = cl,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+
+pedped_cov_glmm.3 <- mixed(imp3.response ~ ratio_c * imp3.perspective * imp3.motorist +
+                             ratio_c * scenario * imp3.motorist +
+                             (imp3.ratio_c + imp3.scenario + 1 | imp3.participant) +
+                             imp3.gender + imp3.age_group + imp3.better_place +
+                             imp3.driving_experience + imp3.identify +
+                     method = "LRT", # LRT for testing, PB for final
+                     family = binomial, data = pedped.sub,
+                     args_test = list(nsim = 1000, cl = cl), cl = cl,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+
+
+
+pedped_cov_glmm.4 <- mixed(imp4.response ~ ratio_c * imp4.perspective * imp4.motorist +
+                             ratio_c * scenario * imp4.motorist +
+                             (imp4.ratio_c + imp4.scenario + 1 | imp4.participant) +
+                             imp4.gender + imp4.age_group + imp4.better_place +
+                             imp4.driving_experience + imp4.identify +
+                     method = "LRT", # LRT for testing, PB for final
+                     family = binomial, data = pedped.sub,
+                     args_test = list(nsim = 1000, cl = cl), cl = cl,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+
+
+pedped_cov_glmm.5 <- mixed(imp5.response ~ ratio_c * imp5.perspective * imp5.motorist +
+                             ratio_c * scenario * imp5.motorist +
+                             (imp5.ratio_c + imp5.scenario + 1 | imp5.participant) +
+                             imp5.gender + imp5.age_group + imp5.better_place +
+                             imp5.driving_experience + imp5.identify +
+                     method = "LRT", # LRT for testing, PB for final
+                     family = binomial, data = pedped.sub,
+                     args_test = list(nsim = 1000, cl = cl), cl = cl,
+                     control = glmerControl(optimizer = "bobyqa",
+                                            optCtrl = list(maxfun = 2e5)))
+
+
+
+@
 \end{document}
