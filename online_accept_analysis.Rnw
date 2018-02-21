@@ -832,4 +832,20 @@ pedped_cov_glmm.5 <- mixed(imp5.response ~ ratio_c * imp5.perspective * imp5.mot
 
 
 @
+
+<<pedped-cov-followup>>=
+
+emm_pedped_cov1_i3<- emmeans(object = pedped_cov_glmm.1,
+                         pairwise ~ imp1.motorist | ratio_c * imp1.scenario,
+                         type = "response",
+                         at = list(ratio_c = c(1, 2, 3, 4)))
+
+
+emm_pedped_cov1_persp_ratio<- emmeans(object = pedped_cov_glmm.1,
+                                  pairwise ~ imp1.perspective | ratio_c,
+                                  type = "response",
+                                  at = list(ratio_c = c(1, 2, 3, 4)))
+
+@
+
 \end{document}
