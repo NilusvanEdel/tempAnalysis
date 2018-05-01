@@ -740,12 +740,12 @@ carsac_city_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
         values = c(22, 15),
         name = "Mean (\u00B1SD) confidence in decision",
         labels = c("\nEndanger pedestrians\n",
-                   "\nEndanger passengers\n")) +
+                   "\nEndanger car occupants\n")) +
     scale_fill_manual(
         values = c("#67a9cf", "#ef8a62", "white", "black"),
         name = "Relative frequency of decision",
         labels = c("\nEndanger pedestrians\n",
-                   "\nEndanger passengers\n")) +
+                   "\nEndanger car occupants\n")) +
             geom_point(stat = "identity",
                        aes(y = confidence_signed,
                            group = decision:perspective,
