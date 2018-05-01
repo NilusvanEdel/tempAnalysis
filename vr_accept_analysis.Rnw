@@ -570,6 +570,10 @@ We collapse both pedestrian perspectives for this dilemma.
 \label{sec:carsac-plot}
 <<carsac-plot>>=
 
+### mountain trial
+
+carsac.sub <- subset(carsac.sub, carsac.sub$trial == "mountain")
+
 carsac.sub$confidence_signed <- ifelse(
     carsac.sub$decision == "hitPedestrians",
     -carsac.sub$confidence,
@@ -580,10 +584,16 @@ carsac_means <- do.call(data.frame, aggregate(
         motorist + perspective + decision,
     data = carsac.sub, FUN=function(x) c(mean = mean(x), sd = sd(x))))
 
+carsac_means$confidence_signed.mean <- as.numeric(carsac_means$confidence_signed.mean)
+carsac_means$confidence_signed.sd <- as.numeric(carsac_means$confidence_signed.sd)
+
 carsac_means$decision <- paste("x_", carsac_means$decision, sep="")
 
 carsac.ctab <- ctab(carsac.sub$motorist, carsac.sub$perspective,
                     carsac.sub$decision, percentages=TRUE, type = "row")
+
+motorist_names <- c("self-driving" = "Self-driving car",
+                    "human" = "Human driver")
 
 carsac.cont <- as.data.frame(carsac.ctab$ctab)
 colnames(carsac.cont)[1] <- "motorist"
@@ -603,7 +613,7 @@ carsac.sub$confidence_signed <- ifelse(
     carsac.sub$decision == "hitPedestrians",
     -carsac.sub$confidence, carsac.sub$confidence)
 
-carsac_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
+carsac_city_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
                                          group = decision:perspective)) +
     geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
     ylab("Confidence") +
@@ -616,7 +626,7 @@ carsac_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
                      labels = c("Pedestrian",
                                 "Passenger",
                                 "Bystander")) +
-        scale_y_continuous(limits = c(-110,110),
+        scale_y_continuous(limits = c(-112,112),
                        sec.axis = sec_axis(
                            ~., name = "Relative frequency (%)",
                            labels = c("100", "50", "0", "50", "100")),
@@ -647,7 +657,106 @@ carsac_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
                          legend.direction = "vertical")
 
 
-carsac_raw.plot
+carsac_mountain_raw.plot
+
+
+### city trial
+
+carsac.sub <- subset(carsac.sub, carsac.sub$trial == "cityR")
+
+carsac.sub$confidence_signed <- ifelse(
+    carsac.sub$decision == "hitPedestrians",
+    -carsac.sub$confidence,
+    carsac.sub$confidence)
+
+carsac_means <- do.call(data.frame, aggregate(
+    confidence_signed ~
+        motorist + perspective + decision,
+    data = carsac.sub, FUN=function(x) c(mean = mean(x), sd = sd(x))))
+
+
+insertRow <- function(existingDF, newrow, r) {
+  existingDF[seq(r+1,nrow(existingDF)+1),] <- existingDF[seq(r,nrow(existingDF)),]
+  existingDF[r,] <- newrow
+  existingDF
+}
+
+carsac_means <- insertRow(carsac_means, c("human", "Bystander", "hitPedestrians", c(-1000, 10)), 1)
+
+carsac_means$confidence_signed.mean <- as.numeric(carsac_means$confidence_signed.mean)
+carsac_means$confidence_signed.sd <- as.numeric(carsac_means$confidence_signed.sd)
+
+carsac_means$decision <- paste("x_", carsac_means$decision, sep="")
+
+carsac.ctab <- ctab(carsac.sub$motorist, carsac.sub$perspective,
+                    carsac.sub$decision, percentages=TRUE, type = "row")
+
+motorist_names <- c("self-driving" = "Self-driving car",
+                    "human" = "Human driver")
+
+carsac.cont <- as.data.frame(carsac.ctab$ctab)
+colnames(carsac.cont)[1] <- "motorist"
+colnames(carsac.cont)[2] <- "perspective"
+colnames(carsac.cont)[3] <- "decision"
+
+carsac.cont$confidence_signed <- carsac_means$confidence_signed.mean
+
+carsac.cont$confidence_sd <- carsac_means$confidence_signed.sd
+carsac.cont$decision2 <- carsac_means$decision
+
+carsac.cont$Freq <- ifelse(
+    carsac.cont$decision == "hitPedestrians",
+    -carsac.cont$Freq, carsac.cont$Freq)
+
+carsac.sub$confidence_signed <- ifelse(
+    carsac.sub$decision == "hitPedestrians",
+    -carsac.sub$confidence, carsac.sub$confidence)
+
+carsac_city_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
+                                         group = decision:perspective)) +
+    geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
+    ylab("Confidence") +
+     geom_errorbar(aes(ymin = confidence_signed - confidence_sd,
+                       ymax = confidence_signed + confidence_sd,
+                       width = 0.1),
+               data = carsac.cont) +
+    scale_x_discrete(name = "Perspective",
+                     limits = rev(levels(carsac.cont$perspective)),
+                     labels = c("Pedestrian",
+                                "Passenger",
+                                "Bystander")) +
+        scale_y_continuous(limits = c(-112,112),
+                       sec.axis = sec_axis(
+                           ~., name = "Relative frequency (%)",
+                           labels = c("100", "50", "0", "50", "100")),
+                       labels = c(100, 50, 0, 50, 100)) +
+        geom_point(stat = "identity", aes(y = confidence_signed,
+                                      group = decision:perspective,
+                                      shape = decision2), size = 2.5) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    scale_shape_manual(
+        values = c(22, 15),
+        name = "Mean (\u00B1SD) confidence in decision",
+        labels = c("\nEndanger pedestrians\n",
+                   "\nEndanger passengers\n")) +
+    scale_fill_manual(
+        values = c("#67a9cf", "#ef8a62", "white", "black"),
+        name = "Relative frequency of decision",
+        labels = c("\nEndanger pedestrians\n",
+                   "\nEndanger passengers\n")) +
+            geom_point(stat = "identity",
+                       aes(y = confidence_signed,
+                           group = decision:perspective,
+                           fill = decision2, shape = decision2),
+                       size = 3, show.legend = FALSE) +
+    facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
+    guides(fill = guide_legend(order = 1),
+           shape = guide_legend(order = 2)) +
+    coord_flip() + theme(legend.position = "bottom",
+                         legend.direction = "vertical")
+
+
+carsac_city_raw.plot
 
 @
 
