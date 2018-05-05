@@ -360,18 +360,21 @@ motorist_names <- c("self-driving" = "Self-driving car",
 
 child_raw.plot <- ggplot(child.cont, aes(x = perspective,
                                          group = decision:perspective)) +
-    geom_bar(stat = "identity", aes(y = Freq, fill = decision), colour = "black") +
+    geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
+    geom_bar(stat = "identity", aes(y = Freq, fill = decision), colour = "black", show.legend = FALSE) +
     ylab("Confidence") +
      geom_errorbar(aes(ymin = confidence_signed - confidence_sd,
                        ymax = confidence_signed + confidence_sd,
                        width = 0.1),
                data = child.cont) +
+#    theme_cowplot(font_size = 12) +
+#    theme(aspect.ratio = 3/7) +
     scale_x_discrete(name = "Perspective",
                      limits = rev(levels(child.cont$perspective)),
                      labels = c("Pedestrian\nwith adults",
                                 "Pedestrian\nwith children",
                                 "Passenger", "Bystander")) +
-    scale_y_continuous(limits = c(-110,110),
+    scale_y_continuous(limits = c(-112,112),
                        sec.axis = sec_axis(
                            ~., name = "Relative frequency (%)",
                            labels = c("100", "50", "0", "50", "100")),
@@ -382,16 +385,17 @@ child_raw.plot <- ggplot(child.cont, aes(x = perspective,
                size = 2.5) +
 #    geom_hline(yintercept = 0, linetype = "dashed") +
     scale_shape_manual(
-        values = c(22, 15),
+        values = c(15, 22),
         name = "Mean (\u00B1SD) confidence in decision",
-        labels = c("\nEndanger child pedestrians\n(fewer lives)\n",
-                   "\nEndanger adult pedestrians\n(more lives)\n"),
+        labels = c("Endanger fewer lives",
+                   "Endanger more lives"),
         limits = rev(levels(child.cont$decision))) +
     scale_fill_manual(
-        values = c("#67a9cf", "#ef8a62", "white", "black"),
+#        values = c("#969696", "#525252","white", "black"),  # black and white
+        values = c("#FB6A4A", "#A50F15",  NA, "white"),
         name = "Relative frequency of decision",
-        labels = c("\nEndanger child pedestrians\n(fewer lives)\n",
-                   "\nEndanger adult pedestrians\n(more lives)\n"),
+        labels = c("Endanger fewer pedestrains",
+                   "Endanger more pedestrians", "",""),
         limits = c("hitChildren", "hitAdults",
                    "x_hitChildren", "x_hitAdults")) +
     geom_point(stat = "identity", aes(y = confidence_signed,
@@ -399,13 +403,14 @@ child_raw.plot <- ggplot(child.cont, aes(x = perspective,
                                       fill = decision2, shape = decision),
                size = 3, show.legend = FALSE) +
     facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
-    guides(fill = guide_legend(order = 1),
-           shape = guide_legend(order = 2)) +
+    guides(fill = guide_legend(order = 1, title.position = "top"),
+           shape = guide_legend(order = 2, title.position = "top")) +
+    theme_cowplot(font_size = 9) +
     coord_flip() + theme(legend.position = "bottom",
-                         legend.direction = "vertical") +
-    theme(aspect.ratio = 1/3)
+                         legend.direction = "vertical")
 
 child_raw.plot
+
 
 @
 
@@ -573,6 +578,8 @@ We collapse both pedestrian perspectives for this dilemma.
 
 ### mountain trial
 
+carsac.sub.temp <- carsac.sub
+
 carsac.sub <- subset(carsac.sub, carsac.sub$trial == "mountain")
 
 carsac.sub$confidence_signed <- ifelse(
@@ -616,12 +623,15 @@ carsac.sub$confidence_signed <- ifelse(
 
 carsac_mountain_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
                                          group = decision:perspective)) +
-    geom_bar(stat = "identity", aes(y = Freq, fill = decision), colour = "black") +
+    geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
+    geom_bar(stat = "identity", aes(y = Freq, fill = decision), colour = "black", show.legend = FALSE) +
     ylab("Confidence") +
      geom_errorbar(aes(ymin = confidence_signed - confidence_sd,
                        ymax = confidence_signed + confidence_sd,
                        width = 0.1),
                data = carsac.cont) +
+#    theme_cowplot(font_size = 12) +
+#    theme(aspect.ratio = 3/7) +
     scale_x_discrete(name = "Perspective",
                      limits = rev(levels(carsac.cont$perspective)),
                      labels = c("Pedestrian",
@@ -637,15 +647,15 @@ carsac_mountain_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
                                       shape = decision2), size = 2.5) +
 #    geom_hline(yintercept = 0, linetype = "dashed") +
     scale_shape_manual(
-        values = c(22, 15),
+        values = c(15, 22),
         name = "Mean (\u00B1SD) confidence in decision",
-        labels = c("\nEndanger pedestrians\n",
-                   "\nEndanger car occupants\n")) +
+        labels = c("Endanger pedestrians",
+                   "Endanger car occupants")) +
     scale_fill_manual(
-        values = c("#67a9cf", "#ef8a62", "white", "black"),
+        values = c( "#fdb863", "#b2abd2", NA, "white"),
         name = "Relative frequency of decision",
-        labels = c("\nEndanger pedestrians\n",
-                   "\nEndanger car occupants\n")) +
+        labels = c("Endanger pedestrians",
+                   "Endanger car occupants", "", "")) +
             geom_point(stat = "identity",
                        aes(y = confidence_signed,
                            group = decision:perspective,
@@ -654,15 +664,14 @@ carsac_mountain_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
     facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
     guides(fill = guide_legend(order = 1),
            shape = guide_legend(order = 2)) +
-    coord_flip() + theme(legend.position = "bottom",
-                         legend.direction = "vertical") +
-    theme(aspect.ratio = 1/3)
-
-
-carsac_mountain_raw.plot
+    theme_cowplot(font_size = 9) +
+    coord_flip() + theme(legend.position = "right",
+                         legend.direction = "vertical")
 
 
 ### city trial
+
+carsac.sub <- carsac.sub.temp
 
 carsac.sub <- subset(carsac.sub, carsac.sub$trial == "cityR")
 
@@ -716,11 +725,14 @@ carsac.sub$confidence_signed <- ifelse(
 
 carsac_city_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
                                          group = decision:perspective)) +
-    geom_bar(stat = "identity", aes(y = Freq, fill = decision), colour = "black", width = 0.9) +
+    geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
+    geom_bar(stat = "identity", aes(y = Freq, fill = decision), colour = "black", show.legend = FALSE) +
     ylab("Confidence") +
-     geom_errorbar(aes(ymin = confidence_signed - confidence_sd,
-                       ymax = confidence_signed + confidence_sd,
-                       width = 0.1),
+#    theme_cowplot(font_size = 12) +
+#    theme(aspect.ratio = 3/7) +
+    geom_errorbar(aes(ymin = confidence_signed - confidence_sd,
+                      ymax = confidence_signed + confidence_sd,
+                      width = 0.1),
                data = carsac.cont) +
     scale_x_discrete(name = "Perspective",
                      limits = rev(levels(carsac.cont$perspective)),
@@ -737,15 +749,15 @@ carsac_city_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
                                       shape = decision2), size = 2.5) +
 #    geom_hline(yintercept = 0, linetype = "dashed") +
     scale_shape_manual(
-        values = c(22, 15),
+        values = c(15, 22),
         name = "Mean (\u00B1SD) confidence in decision",
-        labels = c("\nEndanger pedestrians\n",
-                   "\nEndanger car occupants\n")) +
+        labels = c("Endanger pedestrians",
+                   "Endanger car occupants")) +
     scale_fill_manual(
-        values = c("#67a9cf", "#ef8a62", "white", "black"),
+        values = c( "#fdb863", "#b2abd2", NA, "white"),
         name = "Relative frequency of decision",
-        labels = c("\nEndanger pedestrians\n",
-                   "\nEndanger car occupants\n")) +
+        labels = c("Endanger pedestrians",
+                   "Endanger car occupants", "", "")) +
             geom_point(stat = "identity",
                        aes(y = confidence_signed,
                            group = decision:perspective,
@@ -754,12 +766,18 @@ carsac_city_raw.plot <- ggplot(carsac.cont, aes(x = perspective,
     facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
     guides(fill = guide_legend(order = 1),
            shape = guide_legend(order = 2)) +
-    coord_flip() + theme(legend.position = "bottom",
-                         legend.direction = "vertical") +
-    theme(aspect.ratio = 1/3)
+    theme_cowplot(font_size = 9) +
+    coord_flip() + theme(legend.position = "right",
+                         legend.direction = "vertical")
 
 
-carsac_city_raw.plot
+# joint plot
+carsac_joint.plot <- ggarrange(carsac_city_raw.plot,
+                               carsac_mountain_raw.plot,
+                               labels = c("C", "D"),
+                               nrow = 2,
+                               common.legend = TRUE, legend = "bottom")
+
 
 @
 
@@ -928,12 +946,16 @@ sidewalk.cont$Freq <- ifelse(sidewalk.cont$decision == "hitSidewalk",
 
 sidewalk_raw.plot <- ggplot(sidewalk.cont, aes(x = perspective,
                                          group = decision:perspective)) +
-    geom_bar(stat = "identity", aes(y = Freq, fill = decision), colour = "black", width = 0.9) +
+    geom_bar(stat = "identity", aes(y = Freq, fill = decision)) +
+    geom_bar(stat = "identity", aes(y = Freq, fill = decision), colour = "black",
+             show.legend = FALSE) +
     ylab("Confidence") +
      geom_errorbar(aes(ymin = confidence_signed - confidence_sd,
                        ymax = confidence_signed + confidence_sd,
                        width = 0.1),
-                   data = sidewalk.cont) +
+                   data = sidewalk.cont)  +
+#    theme_cowplot(font_size = 12) +
+#    theme(aspect.ratio = 3/7) +
     scale_x_discrete(name = "Perspective",
                      limits = rev(levels(sidewalk.cont$perspective)),
                      labels = c("Pedestrian\non road",
@@ -949,15 +971,16 @@ sidewalk_raw.plot <- ggplot(sidewalk.cont, aes(x = perspective,
                                       shape = decision2), size = 2.5) +
 #    geom_hline(yintercept = 0, linetype = "dashed") +
     scale_shape_manual(
-        values = c(22, 15),
+        values = c(15, 22),
         name = "Mean (\u00B1SD) confidence in decision",
-        labels = c("\nEndanger pedestrians on sidewalk\n(fewer lives)\n",
-                   "\nEndanger pedestrians on road\n(more lives)\n")) +
+        labels = c("Endanger fewer pedestrians",
+                   "Endanger more pedestrians")) +
     scale_fill_manual(
-        values = c("#67a9cf", "#ef8a62", "white", "black"),
+#        values = c( "#fdb863", "#b2abd2", "white", NA),
+        values = c("#FB6A4A", "#A50F15", NA, "white"),
         name = "Relative frequency of decision",
-        labels = c("\nEndanger pedestrians on sidewalk\n(fewer lives)\n",
-                   "\nEndanger pedestrians on road\n(more lives)\n")) +
+        labels = c("Endanger fewer pedestrians",
+                   "Endanger more pedestrians", "", "")) +
     geom_point(stat = "identity",
                aes(y = confidence_signed,
                    group = decision:perspective,
@@ -966,10 +989,21 @@ sidewalk_raw.plot <- ggplot(sidewalk.cont, aes(x = perspective,
     facet_grid(motorist ~ ., labeller = as_labeller(motorist_names)) +
     guides(fill = guide_legend(order = 1),
            shape = guide_legend(order = 2)) +
-    coord_flip() + theme(legend.position = "bottom",
+        coord_flip() + theme_cowplot(font_size = 9) + theme(legend.position = "bottom",
                          legend.direction = "vertical")
 
-sidewalk_raw.plot
+
+# combine child and sidewalk plots
+
+child_sidewalk.plot <- ggarrange(child_raw.plot, sidewalk_raw.plot, common.legend = TRUE,
+                                 nrow = 2,
+                                 legend = "bottom", labels = c("A", "B"))
+
+
+# combine all figures for VR
+
+vr_combined.plot <- ggarrange(child_sidewalk.plot, carsac_joint.plot)
+
 @
 
 \label{sec:sidewalk-glmm}
