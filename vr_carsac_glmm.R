@@ -94,8 +94,7 @@ carsac.sub$age_c <- scale(carsac.sub$age)
 (nc <- detectCores())
 cl <- makeCluster(rep("localhost", nc))
 
-carsac_glmm_base <- mixed(decision ~ perspective + motorist +
-                              perspective:motorist + trial +
+carsac_glmm_base <- mixed(decision ~ perspective * motorist * trial +
                               (1 | participant.ID),
                           method = "PB",
                           family = "binomial", data = carsac.sub,
@@ -103,9 +102,7 @@ carsac_glmm_base <- mixed(decision ~ perspective + motorist +
                           control = glmerControl(optimizer = "bobyqa",
                                                  optCtrl = list(maxfun = 2e5)))
 
-carsac_glmm_cov <- mixed(decision ~ perspective + motorist +
-                        perspective:motorist +
-                        trial + gender + age_c + opinAV +
+carsac_glmm_cov <- mixed(decision ~ perspective * motorist * trial + gender + age_c + opinAV +
                         education +  drivExperience + visImpairment +
                         perceivedIden +
                         (1 | participant.ID),
@@ -133,4 +130,4 @@ emm_carsac_motorist <- emmeans(carsac_glmm_cov, pairwise ~ motorist,
                                type = 'response')
 
 
-save.image(file = "vr_carsac_glmm_v2.RData")
+save.image(file = "vr_carsac_glmm_v3.RData")
