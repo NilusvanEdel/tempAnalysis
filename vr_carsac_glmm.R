@@ -99,8 +99,7 @@ carsac_glmm_base <- mixed(decision ~ perspective * motorist * trial +
                           method = "PB",
                           family = "binomial", data = carsac.sub,
                           args_test = list(nsim = 1000, cl = cl), cl = cl,
-                          control = glmerControl(optimizer = "bobyqa",
-                                                 optCtrl = list(maxfun = 2e5)), all_fit = TRUE)
+                          control = glmerControl(optCtrl = list(maxfun = 2e5)), all_fit = TRUE)
 
 carsac_glmm_cov <- mixed(decision ~ perspective * motorist * trial + gender + age_c + opinAV +
                         education +  drivExperience + visImpairment +
@@ -109,8 +108,7 @@ carsac_glmm_cov <- mixed(decision ~ perspective * motorist * trial + gender + ag
                     method = "PB", # change to PB for final
                     family = "binomial", data = carsac.sub,
                     args_test = list(nsim = 1000, cl = cl), cl = cl,
-                    control = glmerControl(optimizer = "bobyqa",
-                                           optCtrl = list(maxfun = 2e5)), all_fit = TRUE)
+                    control = glmerControl(optCtrl = list(maxfun = 2e5)), all_fit = TRUE)
 
 stopCluster(cl)
 
